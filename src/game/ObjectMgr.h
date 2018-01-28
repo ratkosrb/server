@@ -415,6 +415,8 @@ enum ConditionType
                                                             // value2: 0, 1 or 2 (0: equal to, 1: equal or higher than, 2: equal or less than)
     CONDITION_NPC_ENTRY             = 38,                   // NPC value1: the npc entry to check     2: 0 (not equal), 1 (equal)
     CONDITION_WAR_EFFORT_STAGE      = 39,                   // value1: the stage                      value2: 0 : >=, 1: ==, 2 <=
+
+    CONDITION_ALWAYS_FALSE          = 9999,                   // Used to disable conditions for progression system.
 };
 
 enum ConditionSource                                        // From where was the condition called?
@@ -441,8 +443,8 @@ class PlayerCondition
             : m_entry(_entry), m_condition(ConditionType(_condition)), m_value1(_value1), m_value2(_value2) {}
 
         // Checks correctness of values
-        bool IsValid() const { return IsValid(m_entry, m_condition, m_value1, m_value2); }
-        static bool IsValid(uint16 entry, ConditionType condition, uint32 value1, uint32 value2);
+        bool IsValid() { return IsValid(m_entry, m_condition, m_value1, m_value2, this); }
+        static bool IsValid(uint16 entry, ConditionType condition, uint32 value1, uint32 value2, PlayerCondition* pCondition = nullptr);
         static bool CanBeUsedWithoutPlayer(uint16 entry);
 
         // Checks if the player meets the condition
@@ -646,6 +648,15 @@ class ObjectMgr
     public:
         ObjectMgr();
         ~ObjectMgr();
+
+        // Stores all existing ids in the database, not necessarily valid or loaded.
+        void LoadAllIdentifiers();
+        bool IsExistingItemId(uint32 id) { return (m_ItemIdSet.find(id) != m_ItemIdSet.end()); }
+        bool IsExistingQuestId(uint32 id) { return (m_QuestIdSet.find(id) != m_QuestIdSet.end()); }
+        bool IsExistingCreatureId(uint32 id) { return (m_CreatureIdSet.find(id) != m_CreatureIdSet.end()); }
+        bool IsExistingGameObjectId(uint32 id) { return (m_GameObjectIdSet.find(id) != m_GameObjectIdSet.end()); }
+        bool IsExistingCreatureGuid(uint32 id) { return (m_CreatureGuidSet.find(id) != m_CreatureGuidSet.end()); }
+        bool IsExistingGameObjectGuid(uint32 id) { return (m_GameObjectGuidSet.find(id) != m_GameObjectGuidSet.end()); }
 
         typedef UNORDERED_MAP<uint32, Item*> ItemMap;
 
@@ -1430,6 +1441,14 @@ class ObjectMgr
         void LoadQuestRelationsHelper(QuestRelationsMap& map, char const* table);
         void LoadVendors(char const* tableName, bool isTemplates);
         void LoadTrainers(char const* tableName, bool isTemplates);
+
+        // Storing all existing IDs in database.
+        std::set<uint32> m_ItemIdSet;
+        std::set<uint32> m_QuestIdSet;
+        std::set<uint32> m_CreatureIdSet;
+        std::set<uint32> m_GameObjectIdSet;
+        std::set<uint32> m_CreatureGuidSet;
+        std::set<uint32> m_GameObjectGuidSet;
 
         typedef std::map<uint32,PetLevelInfo*> PetLevelInfoMap;
         // PetLevelInfoMap[creature_id][level]

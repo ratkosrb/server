@@ -170,6 +170,95 @@ ObjectMgr::~ObjectMgr()
         delete itr->second;
 }
 
+void ObjectMgr::LoadAllIdentifiers()
+{
+    m_ItemIdSet.clear();
+
+    Field* fields;
+    QueryResult* result = WorldDatabase.Query("SELECT DISTINCT entry FROM item_template");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            m_ItemIdSet.insert(id);
+        } while (result->NextRow());
+        delete result;
+    }
+    
+    m_QuestIdSet.clear();
+    result = WorldDatabase.Query("SELECT DISTINCT entry FROM quest_template");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            m_QuestIdSet.insert(id);
+        } while (result->NextRow());
+        delete result;
+    }
+
+    m_CreatureIdSet.clear();
+    result = WorldDatabase.Query("SELECT DISTINCT entry FROM creature_template");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            m_CreatureIdSet.insert(id);
+        } while (result->NextRow());
+        delete result;
+    }
+
+    m_GameObjectIdSet.clear();
+    result = WorldDatabase.Query("SELECT DISTINCT entry FROM gameobject_template");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            m_GameObjectIdSet.insert(id);
+        } while (result->NextRow());
+        delete result;
+    }
+
+    m_CreatureGuidSet.clear();
+    result = WorldDatabase.Query("SELECT DISTINCT guid FROM creature");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            m_CreatureGuidSet.insert(id);
+        } while (result->NextRow());
+        delete result;
+    }
+
+    m_GameObjectGuidSet.clear();
+    result = WorldDatabase.Query("SELECT DISTINCT guid FROM gameobject");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            m_GameObjectGuidSet.insert(id);
+        } while (result->NextRow());
+        delete result;
+    }
+}
+
 // Nostalrius
 void ObjectMgr::LoadSpellDisabledEntrys()
 {
@@ -2542,7 +2631,8 @@ void ObjectMgr::LoadItemRequiredTarget()
 
         if (!pItemProto)
         {
-            sLog.outErrorDb("Table `item_required_target`: Entry %u listed for TargetEntry %u does not exist in `item_template`.", uiItemId, uiTargetEntry);
+            if (!IsExistingItemId(uiItemId))
+                sLog.outErrorDb("Table `item_required_target`: Entry %u listed for TargetEntry %u does not exist in `item_template`.", uiItemId, uiTargetEntry);
             continue;
         }
 
@@ -4973,7 +5063,8 @@ void ObjectMgr::LoadQuestAreaTriggers()
         Quest const* quest = GetQuestTemplate(quest_ID);
         if (!quest)
         {
-            sLog.outErrorDb("Table `areatrigger_involvedrelation` has record (id: %u) for not existing quest %u", trigger_ID, quest_ID);
+            if (!sObjectMgr.IsExistingQuestId(quest_ID))
+                sLog.outErrorDb("Table `areatrigger_involvedrelation` has record (id: %u) for not existing quest %u", trigger_ID, quest_ID);
             continue;
         }
 
@@ -5917,7 +6008,7 @@ inline void CheckGOConsumable(GameObjectInfo const* goInfo, uint32 dataN, uint32
 void ObjectMgr::LoadGameobjectInfo()
 {
     SQLGameObjectLoader loader;
-    loader.Load(sGOStorage);
+    loader.LoadProgressive(sGOStorage, sWorld.GetWowPatch());
     CheckGameObjectInfos();
     sLog.outString(">> Loaded %u game object templates", sGOStorage.GetRecordCount());
     sLog.outString();
@@ -9200,7 +9291,7 @@ void ObjectMgr::LoadConditions()
 
     for (uint32 i = 0; i < sConditionStorage.GetMaxEntry(); ++i)
     {
-        const PlayerCondition* condition = sConditionStorage.LookupEntry<PlayerCondition>(i);
+        PlayerCondition* condition = const_cast<PlayerCondition*>(sConditionStorage.LookupEntry<PlayerCondition>(i));
         if (!condition)
             continue;
 
@@ -9556,6 +9647,7 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
         case CONDITION_ACTIVE_HOLIDAY:
         case CONDITION_NOT_ACTIVE_HOLIDAY:
         case CONDITION_WOW_PATCH:
+        case CONDITION_ALWAYS_FALSE:
             break;
         case CONDITION_AREAID:
         case CONDITION_AREA_FLAG:
@@ -9622,7 +9714,7 @@ bool PlayerCondition::CheckParamRequirements(Player const* pPlayer, Map const* m
 }
 
 // Verification of condition values validity
-bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 value1, uint32 value2)
+bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 value1, uint32 value2, PlayerCondition* pCondition)
 {
     switch (condition)
     {
@@ -9691,8 +9783,17 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             ItemPrototype const* proto = ObjectMgr::GetItemPrototype(value1);
             if (!proto)
             {
-                sLog.outErrorDb("Item condition (entry %u, type %u) requires to have non existing item (%u), skipped", entry, condition, value1);
-                return false;
+                if (!sObjectMgr.IsExistingItemId(value1))
+                {
+                    sLog.outErrorDb("Item condition (entry %u, type %u) requires to have non existing item (%u), skipped", entry, condition, value1);
+                    return false;
+                }
+                else
+                {
+                    if (pCondition)
+                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    return true;
+                }
             }
 
             if (value2 < 1)
@@ -9707,8 +9808,17 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             ItemPrototype const* proto = ObjectMgr::GetItemPrototype(value1);
             if (!proto)
             {
-                sLog.outErrorDb("ItemEquipped condition (entry %u, type %u) requires to have non existing item (%u) equipped, skipped", entry, condition, value1);
-                return false;
+                if (!sObjectMgr.IsExistingItemId(value1))
+                {
+                    sLog.outErrorDb("ItemEquipped condition (entry %u, type %u) requires to have non existing item (%u) equipped, skipped", entry, condition, value1);
+                    return false;
+                }
+                else
+                {
+                    if (pCondition)
+                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    return true;
+                }
             }
             break;
         }
@@ -9778,8 +9888,17 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             Quest const* Quest = sObjectMgr.GetQuestTemplate(value1);
             if (!Quest)
             {
-                sLog.outErrorDb("Quest condition (entry %u, type %u) specifies non-existing quest (%u), skipped", entry, condition, value1);
-                return false;
+                if (!sObjectMgr.IsExistingQuestId(value1))
+                {
+                    sLog.outErrorDb("Quest condition (entry %u, type %u) specifies non-existing quest (%u), skipped", entry, condition, value1);
+                    return false;
+                }
+                else
+                {
+                    if (pCondition)
+                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    return true;
+                }
             }
 
             if (value2 && condition != CONDITION_QUESTTAKEN)
@@ -9961,8 +10080,17 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
         {
             if (!sObjectMgr.GetCreatureTemplate(value1))
             {
-                sLog.outErrorDb("NPC Entry condition (entry %u, type %u) has invalid nonexistent NPC entry %u", entry, condition, value2);
-                return false;
+                if (!sObjectMgr.IsExistingCreatureId(value1))
+                {
+                    sLog.outErrorDb("NPC Entry condition (entry %u, type %u) has invalid nonexistent NPC entry %u", entry, condition, value2);
+                    return false;
+                }
+                else
+                {
+                    if (pCondition)
+                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    return true;
+                }
             }
             if (value2 < 0 || value2 > 1)
             {
@@ -9975,12 +10103,12 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
         {
             if (value1 < 0 || value1 > WAR_EFFORT_STAGE_COMPLETE)
             {
-                sLog.outErrorDb("War Effort stage condition condition (entry %u, type %u) has invalid stage %u", entry, condition, value1);
+                sLog.outErrorDb("War Effort stage condition (entry %u, type %u) has invalid stage %u", entry, condition, value1);
                 return false;
             }
             if (value2 < 0 || value2 > 2)
             {
-                sLog.outErrorDb("War Effort stage condition condition (entry %u, type %u) has invalid equality %u", entry, condition, value2);
+                sLog.outErrorDb("War Effort stage condition (entry %u, type %u) has invalid equality %u", entry, condition, value2);
                 return false;
             }
             break;
@@ -10021,6 +10149,7 @@ bool PlayerCondition::CanBeUsedWithoutPlayer(uint16 entry)
         case CONDITION_WOW_PATCH:
         case CONDITION_NPC_ENTRY:
         case CONDITION_WAR_EFFORT_STAGE:
+        case CONDITION_ALWAYS_FALSE:
             return true;
         default:
             return false;
