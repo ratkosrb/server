@@ -297,7 +297,8 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Scripts()
             //Creature does not exist in database
             if (!sCreatureStorage.LookupEntry<CreatureInfo>(temp.creature_id))
             {
-                sLog.outErrorDb("CreatureEventAI:  Event %u has script for non-existing creature entry (%u), skipping.", i, temp.creature_id);
+                if (!sObjectMgr.IsExistingCreatureId(temp.creature_id))
+                    sLog.outErrorDb("CreatureEventAI:  Event %u has script for non-existing creature entry (%u), skipping.", i, temp.creature_id);
                 continue;
             }
 

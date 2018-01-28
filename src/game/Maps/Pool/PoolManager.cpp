@@ -718,7 +718,7 @@ void PoolManager::LoadFromDB()
     mCreatureSearchMap.clear();
 
     result = WorldDatabase.PQuery(
-            "SELECT guid, pool_entry, chance, 0, flags FROM pool_creature WHERE ((%u >= patch_min) && (%u <= patch_max))"
+            "SELECT guid, pool_entry, chance, 0, flags FROM pool_creature WHERE ((%u >= patch_min) && (%u <= patch_max)) "
             "UNION "
             " SELECT guid, pool_entry, chance, pool_creature_template.id, pool_creature_template.flags "
                 "FROM pool_creature_template LEFT JOIN creature ON creature.id = pool_creature_template.id;", sWorld.GetWowPatch(), sWorld.GetWowPatch());
@@ -791,7 +791,7 @@ void PoolManager::LoadFromDB()
     mPoolGameobjectGroups.resize(max_pool_id + 1);
     mGameobjectSearchMap.clear();
     //                                   1     2           3       4  5
-    result = WorldDatabase.PQuery("SELECT guid, pool_entry, chance, 0, flags FROM pool_gameobject WHERE ((%u >= patch_min) && (%u <= patch_max))"
+    result = WorldDatabase.PQuery("SELECT guid, pool_entry, chance, 0, flags FROM pool_gameobject WHERE ((%u >= patch_min) && (%u <= patch_max)) "
         "UNION "
         "SELECT guid, pool_entry, chance, pool_gameobject_template.id, pool_gameobject_template.flags "
         "FROM pool_gameobject_template LEFT JOIN gameobject ON gameobject.id = pool_gameobject_template.id", sWorld.GetWowPatch(), sWorld.GetWowPatch());

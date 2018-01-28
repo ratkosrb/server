@@ -1382,7 +1382,8 @@ void ObjectMgr::LoadCreatureAddons()
     for (uint32 i = 1; i < sCreatureDataAddonStorage.GetMaxEntry(); ++i)
         if (CreatureDataAddon const* addon = sCreatureDataAddonStorage.LookupEntry<CreatureDataAddon>(i))
             if (mCreatureDataMap.find(addon->guidOrEntry) == mCreatureDataMap.end())
-                sLog.outErrorDb("Creature (GUID: %u) does not exist but has a record in `creature_addon`", addon->guidOrEntry);
+                if (!sObjectMgr.IsExistingCreatureGuid(addon->guidOrEntry))
+                    sLog.outErrorDb("Creature (GUID: %u) does not exist but has a record in `creature_addon`", addon->guidOrEntry);
 }
 
 EquipmentInfo const* ObjectMgr::GetEquipmentInfo(uint32 entry)
@@ -1740,8 +1741,8 @@ void ObjectMgr::LoadCreatures(bool reload)
                           "equipment_id, position_x, position_y, position_z, orientation, spawntimesecsmin, spawntimesecsmax, spawndist, currentwaypoint,"
                           //   13         14       15          16          17
                           "curhealth, curmana, DeathState, MovementType, event,"
-                          //   18                        19                                 20          21            22          23
-                          "pool_creature.pool_entry, pool_creature_template.pool_entry, spawnFlags, visibilitymod, patch_min, patch_max  "
+                          //   18                        19                                 20          21                  22                 23
+                          "pool_creature.pool_entry, pool_creature_template.pool_entry, spawnFlags, visibilitymod, creature.patch_min, creature.patch_max  "
                           "FROM creature "
                           "LEFT OUTER JOIN game_event_creature ON creature.guid = game_event_creature.guid "
                           "LEFT OUTER JOIN pool_creature ON creature.guid = pool_creature.guid "
@@ -1951,8 +1952,8 @@ void ObjectMgr::LoadGameobjects(bool reload)
     QueryResult *result = WorldDatabase.Query("SELECT gameobject.guid, gameobject.id, map, position_x, position_y, position_z, orientation,"
                           //   7          8          9          10            11                12              13       14      15
                           "rotation0, rotation1, rotation2, rotation3, spawntimesecsmin, spawntimesecsmax, animprogress, state, event, "
-                          //   16                          17                                   18          19             20        21
-                          "pool_gameobject.pool_entry, pool_gameobject_template.pool_entry, spawnFlags, visibilitymod, patch_min, patch_max "
+                          //   16                          17                                   18          19                20                     21
+                          "pool_gameobject.pool_entry, pool_gameobject_template.pool_entry, spawnFlags, visibilitymod, gameobject.patch_min, gameobject.patch_max "
                           "FROM gameobject "
                           "LEFT OUTER JOIN game_event_gameobject ON gameobject.guid = game_event_gameobject.guid "
                           "LEFT OUTER JOIN pool_gameobject ON gameobject.guid = pool_gameobject.guid "
@@ -6200,7 +6201,8 @@ void ObjectMgr::LoadGameobjectsRequirements()
         uint32 guid = fields[0].GetUInt32();
         if (!GetGOData(guid))
         {
-            sLog.outErrorDb("Table `gameobject_requirement` has data for invalid game object guid (%u)", guid);
+            if (!sObjectMgr.IsExistingGameObjectGuid(guid))
+                sLog.outErrorDb("Table `gameobject_requirement` has data for invalid game object guid (%u)", guid);
             continue;
         }
 
@@ -6529,7 +6531,8 @@ void ObjectMgr::LoadReputationOnKill()
 
         if (!GetCreatureTemplate(creature_id))
         {
-            sLog.outErrorDb("Table `creature_onkill_reputation` have data for nonexistent creature entry (%u), skipped", creature_id);
+            if (!sObjectMgr.IsExistingCreatureId(creature_id))
+                sLog.outErrorDb("Table `creature_onkill_reputation` have data for nonexistent creature entry (%u), skipped", creature_id);
             continue;
         }
 
@@ -8967,7 +8970,6 @@ void ObjectMgr::LoadFactionChangeReputations()
         if (!sFactionStore.LookupEntry(alliance) || !sFactionStore.LookupEntry(horde))
         {
             sLog.outErrorDb("Couple %u/%u erreur. Sort inexistant. Supprime de la DB", alliance, horde);
-            WorldDatabase.PExecute("DELETE FROM player_factionchange_reputations WHERE alliance_id = %u AND horde_id = %u", alliance, horde);
         }
         else
             factionchange_reputations[alliance] = horde;
@@ -9004,7 +9006,6 @@ void ObjectMgr::LoadFactionChangeSpells()
         if (!sSpellMgr.GetSpellEntry(alliance) || !sSpellMgr.GetSpellEntry(horde))
         {
             sLog.outErrorDb("Couple %u/%u erreur. Sort inexistant. Supprime de la DB", alliance, horde);
-            WorldDatabase.PExecute("DELETE FROM player_factionchange_spells WHERE alliance_id = %u AND horde_id = %u", alliance, horde);
         }
         else
             factionchange_spells[alliance] = horde;
@@ -9040,8 +9041,8 @@ void ObjectMgr::LoadFactionChangeItems()
 
         if (!GetItemPrototype(alliance) || !GetItemPrototype(horde))
         {
-            sLog.outErrorDb("Couple %u/%u erreur. Item inexistant. Supprime de la DB", alliance, horde);
-            WorldDatabase.PExecute("DELETE FROM player_factionchange_items WHERE alliance_id = %u AND horde_id = %u", alliance, horde);
+            if (!IsExistingItemId(alliance) || !IsExistingItemId(horde))
+                sLog.outErrorDb("Couple %u/%u erreur. Item inexistant. Supprime de la DB", alliance, horde);
         }
         else
             factionchange_items[alliance] = horde;
@@ -9076,8 +9077,8 @@ void ObjectMgr::LoadFactionChangeQuests()
 
         if (!GetQuestTemplate(alliance) || !GetQuestTemplate(horde))
         {
-            sLog.outErrorDb("Couple %u/%u erreur. Quete inexistante. Supprime de la DB", alliance, horde);
-            WorldDatabase.PExecute("DELETE FROM player_factionchange_quests WHERE alliance_id = %u AND horde_id = %u", alliance, horde);
+            if (!IsExistingQuestId(alliance) || !IsExistingQuestId(horde))
+                sLog.outErrorDb("Couple %u/%u erreur. Quete inexistante. Supprime de la DB", alliance, horde);
         }
         else
             factionchange_quests[alliance] = horde;
@@ -9113,8 +9114,8 @@ void ObjectMgr::LoadFactionChangeMounts()
 
         if (!GetItemPrototype(ItemEntry))
         {
-            sLog.outErrorDb("Couple %u/%u/%u erreur. Quete inexistante. Supprime de la DB", RaceId, MountNum, ItemEntry);
-            //WorldDatabase.PExecute("DELETE FROM player_factionchange_mounts WHERE RaceId = %u AND MountNum = %u", RaceId, MountNum);
+            if (!IsExistingItemId(ItemEntry))
+                sLog.outErrorDb("Couple %u/%u/%u erreur. Quete inexistante. Supprime de la DB", RaceId, MountNum, ItemEntry);
         }
         else
         {
@@ -9783,15 +9784,14 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             ItemPrototype const* proto = ObjectMgr::GetItemPrototype(value1);
             if (!proto)
             {
-                if (!sObjectMgr.IsExistingItemId(value1))
+                if (!sObjectMgr.IsExistingItemId(value1) || !pCondition)
                 {
                     sLog.outErrorDb("Item condition (entry %u, type %u) requires to have non existing item (%u), skipped", entry, condition, value1);
                     return false;
                 }
                 else
                 {
-                    if (pCondition)
-                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    pCondition->m_condition = CONDITION_ALWAYS_FALSE;
                     return true;
                 }
             }
@@ -9808,15 +9808,14 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             ItemPrototype const* proto = ObjectMgr::GetItemPrototype(value1);
             if (!proto)
             {
-                if (!sObjectMgr.IsExistingItemId(value1))
+                if (!sObjectMgr.IsExistingItemId(value1) || !pCondition)
                 {
                     sLog.outErrorDb("ItemEquipped condition (entry %u, type %u) requires to have non existing item (%u) equipped, skipped", entry, condition, value1);
                     return false;
                 }
                 else
                 {
-                    if (pCondition)
-                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    pCondition->m_condition = CONDITION_ALWAYS_FALSE;
                     return true;
                 }
             }
@@ -9888,15 +9887,14 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
             Quest const* Quest = sObjectMgr.GetQuestTemplate(value1);
             if (!Quest)
             {
-                if (!sObjectMgr.IsExistingQuestId(value1))
+                if (!sObjectMgr.IsExistingQuestId(value1) || !pCondition)
                 {
                     sLog.outErrorDb("Quest condition (entry %u, type %u) specifies non-existing quest (%u), skipped", entry, condition, value1);
                     return false;
                 }
                 else
                 {
-                    if (pCondition)
-                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    pCondition->m_condition = CONDITION_ALWAYS_FALSE;
                     return true;
                 }
             }
@@ -10028,8 +10026,16 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
                 ItemPrototype const* proto = ObjectMgr::GetItemPrototype(value2);
                 if (!proto)
                 {
-                    sLog.outErrorDb("Learnable ability conditon (entry %u, type %u) has item entry %u defined but item does not exist, skipping.", entry, condition, value2);
-                    return false;
+                    if (!sObjectMgr.IsExistingItemId(value2) || !pCondition)
+                    {
+                        sLog.outErrorDb("Learnable ability conditon (entry %u, type %u) has item entry %u defined but item does not exist, skipping.", entry, condition, value2);
+                        return false;
+                    }
+                    else
+                    {
+                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                        return true;
+                    }
                 }
             }
 
@@ -10080,15 +10086,14 @@ bool PlayerCondition::IsValid(uint16 entry, ConditionType condition, uint32 valu
         {
             if (!sObjectMgr.GetCreatureTemplate(value1))
             {
-                if (!sObjectMgr.IsExistingCreatureId(value1))
+                if (!sObjectMgr.IsExistingCreatureId(value1) || !pCondition)
                 {
                     sLog.outErrorDb("NPC Entry condition (entry %u, type %u) has invalid nonexistent NPC entry %u", entry, condition, value2);
                     return false;
                 }
                 else
                 {
-                    if (pCondition)
-                        pCondition->m_condition = CONDITION_ALWAYS_FALSE;
+                    pCondition->m_condition = CONDITION_ALWAYS_FALSE;
                     return true;
                 }
             }
