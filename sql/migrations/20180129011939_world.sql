@@ -591,7 +591,7 @@ UPDATE `creature_loot_template` SET `patch_min`=6 WHERE `item`=328677;
 -- ERROR:Table 'reference_loot_template' entry 320006 (reference id) not exist but used as loot id in DB.
 UPDATE `creature_loot_template` SET `patch_min`=6 WHERE `item`=320006;
 -- ERROR:Table 'reference_loot_template' entry 326147 (reference id) not exist but used as loot id in DB.
-UPDATE `creature_loot_template` SET `patch_min`=9 WHERE `item`=326147;
+UPDATE `creature_loot_template` SET `patch_min`=4 WHERE `item`=326147;
 -- ERROR:Table 'reference_loot_template' entry 329211 (reference id) not exist but used as loot id in DB.
 UPDATE `creature_loot_template` SET `patch_min`=7 WHERE `item`=329211;
 -- ERROR:Table 'reference_loot_template' entry 329210 (reference id) not exist but used as loot id in DB.
@@ -1161,6 +1161,18 @@ UPDATE `creature_ai_scripts` SET `action2_param1`=9413 WHERE `id`=1432105;
 UPDATE `creature_ai_scripts` SET `action2_param1`=9413 WHERE `id`=1432305;
 UPDATE `creature_ai_scripts` SET `action2_param1`=9413 WHERE `id`=1432605;
 DELETE FROM `creature_ai_texts` WHERE `entry`=-648;
+
+-- Assign patch to City Guards gossip options.
+INSERT INTO `conditions` VALUES (4012, 37, 2, 1);
+INSERT INTO `conditions` VALUES (4014, 37, 4, 1);
+UPDATE `gossip_menu_option` SET `condition_id`=4012 WHERE `menu_id`=435 && `id`=10;
+UPDATE `gossip_menu_option` SET `condition_id`=4014 WHERE `menu_id`=435 && `id`=11;
+UPDATE `gossip_menu_option` SET `condition_id`=4012 WHERE `menu_id`=1951 && `id`=9;
+UPDATE `gossip_menu_option` SET `condition_id`=4014 WHERE `menu_id`=1951 && `id`=10;
+UPDATE `gossip_menu_option` SET `condition_id`=4014 WHERE `menu_id`=721 && `id`=8;
+UPDATE `gossip_menu_option` SET `condition_id`=4014 WHERE `menu_id`=2849 && `id`=9;
+UPDATE `gossip_menu_option` SET `condition_id`=4014 WHERE `menu_id`=2352 && `id`=8;
+UPDATE `gossip_menu_option` SET `condition_id`=4014 WHERE `menu_id`=2121 && `id`=9;
 
 
 -- End of migration.
