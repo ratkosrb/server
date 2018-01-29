@@ -416,7 +416,7 @@ enum ConditionType
     CONDITION_NPC_ENTRY             = 38,                   // NPC value1: the npc entry to check     2: 0 (not equal), 1 (equal)
     CONDITION_WAR_EFFORT_STAGE      = 39,                   // value1: the stage                      value2: 0 : >=, 1: ==, 2 <=
 
-    CONDITION_ALWAYS_FALSE          = 9999,                   // Used to disable conditions for progression system.
+    CONDITION_ALWAYS_FALSE          = 9999,                 // Used to disable conditions for progression system.
 };
 
 enum ConditionSource                                        // From where was the condition called?
@@ -425,7 +425,7 @@ enum ConditionSource                                        // From where was th
     CONDITION_FROM_REFERING_LOOT    = 1,                    // Used to check a entry refering to a reference_loot_template entry
     CONDITION_FROM_GOSSIP_MENU      = 2,                    // Used to check a gossip menu menu-text
     CONDITION_FROM_GOSSIP_OPTION    = 3,                    // Used to check a gossip menu option-item
-    CONDITION_FROM_EVENTAI          = 4,                    // Used to check EventAI Event "On Receive Emote"
+    CONDITION_FROM_EVENTAI          = 4,                    // Used to check EventAI Event conditions.
     CONDITION_FROM_HARDCODED        = 5,                    // Used to check a hardcoded event - not actually a condition
     CONDITION_FROM_VENDOR           = 6,                    // Used to check a condition from a vendor
     CONDITION_FROM_SPELL_AREA       = 7,                    // Used to check a condition from spell_area table
@@ -443,8 +443,7 @@ class PlayerCondition
             : m_entry(_entry), m_condition(ConditionType(_condition)), m_value1(_value1), m_value2(_value2) {}
 
         // Checks correctness of values
-        bool IsValid() { return IsValid(m_entry, m_condition, m_value1, m_value2, this); }
-        static bool IsValid(uint16 entry, ConditionType condition, uint32 value1, uint32 value2, PlayerCondition* pCondition = nullptr);
+        bool IsValid();
         static bool CanBeUsedWithoutPlayer(uint16 entry);
 
         // Checks if the player meets the condition
