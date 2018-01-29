@@ -218,30 +218,24 @@ void CreatureEventAIMgr::CheckUnusedAISummons()
     for (CreatureEventAI_Summon_Map::const_iterator itr = m_CreatureEventAI_Summon_Map.begin(); itr != m_CreatureEventAI_Summon_Map.end(); ++itr)
         idx_set.insert(itr->first);
 
-    for (CreatureEventAI_Event_Map::const_iterator itr = m_CreatureEventAI_Event_Map.begin(); itr != m_CreatureEventAI_Event_Map.end(); ++itr)
+    for (uint8 i = 1; i <= MAX_ACTIONS; i++)
     {
-        for (size_t i = 0; i < itr->second.size(); ++i)
+        Field* fields;
+        QueryResult* result = WorldDatabase.PQuery("SELECT action%u_param3 FROM creature_ai_scripts WHERE action%u_type=32", i, i);
+
+        if (result)
         {
-            CreatureEventAI_Event const& event = itr->second[i];
-
-            for (int j = 0; j < MAX_ACTIONS; ++j)
+            do
             {
-                CreatureEventAI_Action const& action = event.action[j];
-                switch (action.type)
-                {
-                    case ACTION_T_SUMMON_ID:
-                    {
-                        if (action.summon_id.spawnId)
-                            idx_set.erase(action.summon_id.spawnId);
-                        break;
-                    }
-                    default:
-                        break;
-                }
-
-            }
+                fields = result->Fetch();
+                int id = fields[0].GetInt32();
+                if (id)
+                    idx_set.erase(id);
+            } while (result->NextRow());
+            delete result;
         }
     }
+    
 
     for (std::set<int32>::const_iterator itr = idx_set.begin(); itr != idx_set.end(); ++itr)
         sLog.outErrorDb("CreatureEventAI:  Entry %i in table `creature_ai_summons` but not used in EventAI scripts.", *itr);

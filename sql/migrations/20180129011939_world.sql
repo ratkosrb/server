@@ -107,6 +107,10 @@ UPDATE `pool_template` SET `patch_min`=1 WHERE `entry`=4292;
 UPDATE `pool_gameobject` SET `patch_min`=1 WHERE `pool_entry`=4293;
 UPDATE `pool_template` SET `patch_min`=1 WHERE `entry`=4293;
 
+-- ERROR:`pool_creature` has a non existing creature spawn (GUID: 56961) defined for pool id (42901), skipped.
+UPDATE `pool_creature` SET `patch_min`=1 WHERE `pool_entry`=42901;
+UPDATE `pool_template` SET `patch_min`=1 WHERE `entry`=42901;
+
 -- The description of this item changed, it had a joke about paladins.
 -- http://db.vanillagaming.org/?item=19815
 DELETE FROM `item_template` WHERE `entry`=19815;
@@ -855,9 +859,77 @@ UPDATE `creature_loot_template` SET `patch_min`=5 WHERE `item`=328717;
 -- ERROR:Table 'reference_loot_template' entry 328716 (reference id) not exist but used as loot id in DB.
 UPDATE `creature_loot_template` SET `patch_min`=5 WHERE `item`=328716;
 -- ERROR:Table 'reference_loot_template' entry 12002 (reference id) not exist but used as loot id in DB.
-UPDATE `gameobject_loot_template` SET `patch_min`=9 WHERE `item`=12002;
+UPDATE `gameobject_loot_template` SET `patch_min`=9 WHERE `mincountOrRef`=-12002;
 -- ERROR:Table 'reference_loot_template' entry 172590 (reference id) not exist but used as loot id in DB.
 UPDATE `gameobject_loot_template` SET `patch_min`=5 WHERE `item`=172590;
+-- ERROR:Table 'reference_loot_template' entry 315709 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=315709;
+-- ERROR:Table 'reference_loot_template' entry 315710 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=315710;
+-- ERROR:Table 'reference_loot_template' entry 315715 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=315715;
+-- ERROR:Table 'reference_loot_template' entry 315716 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=315716;
+-- ERROR:Table 'reference_loot_template' entry 315717 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=315717;
+-- ERROR:Table 'reference_loot_template' entry 324888 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324888;
+-- ERROR:Table 'reference_loot_template' entry 324889 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324889;
+-- ERROR:Table 'reference_loot_template' entry 324891 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324891;
+-- ERROR:Table 'reference_loot_template' entry 324893 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324893;
+-- ERROR:Table 'reference_loot_template' entry 324895 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324895;
+-- ERROR:Table 'reference_loot_template' entry 324897 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324897;
+-- ERROR:Table 'reference_loot_template' entry 324899 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324899;
+-- ERROR:Table 'reference_loot_template' entry 324901 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324901;
+-- ERROR:Table 'reference_loot_template' entry 324903 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324903;
+-- ERROR:Table 'reference_loot_template' entry 324906 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324906;
+-- ERROR:Table 'reference_loot_template' entry 324910 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324910;
+-- ERROR:Table 'reference_loot_template' entry 324912 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324912;
+-- ERROR:Table 'reference_loot_template' entry 324916 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324916;
+-- ERROR:Table 'reference_loot_template' entry 324917 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324917;
+-- ERROR:Table 'reference_loot_template' entry 324921 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=324921;
+-- ERROR:Table 'reference_loot_template' entry 327338 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=327338;
+-- ERROR:Table 'reference_loot_template' entry 327340 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=327340;
+-- ERROR:Table 'reference_loot_template' entry 328259 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328259;
+-- ERROR:Table 'reference_loot_template' entry 328261 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328261;
+-- ERROR:Table 'reference_loot_template' entry 328267 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328267;
+-- ERROR:Table 'reference_loot_template' entry 328268 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328268;
+-- ERROR:Table 'reference_loot_template' entry 328270 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328270;
+-- ERROR:Table 'reference_loot_template' entry 328272 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328272;
+-- ERROR:Table 'reference_loot_template' entry 328274 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328274;
+-- ERROR:Table 'reference_loot_template' entry 328277 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328277;
+-- ERROR:Table 'reference_loot_template' entry 328278 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328278;
+-- ERROR:Table 'reference_loot_template' entry 328306 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328306;
+-- ERROR:Table 'reference_loot_template' entry 328314 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328314;
+-- ERROR:Table 'reference_loot_template' entry 328316 isn't reference id and not referenced from loot, and then useless.
+UPDATE `reference_loot_template` SET `patch_min`=1 WHERE `entry`=328316;
 
 -- ERROR:Table 'reference_loot_template' entry 324908 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324907 (reference id) not exist but used as loot id in DB.
@@ -874,7 +946,7 @@ UPDATE `creature` SET `patch_min`=1 WHERE `id`=11492;
 
 -- ERROR:Table 'reference_loot_template' entry 328492 (reference id) not exist but used as loot id in DB.
 UPDATE `creature_loot_template` SET `patch_min`=2 WHERE `item`=328492;
-UPDATE `creature_loot_template` SET `patch`=2 WHERE `entry`=14506;
+UPDATE `creature_loot_template` SET `patch_min`=2 WHERE `entry`=14506;
 UPDATE `creature_template` SET `patch`=2 WHERE `entry`=14506;
 UPDATE `creature_template_addon` SET `patch`=2 WHERE `entry`=14506;
 UPDATE `creature` SET `patch_min`=2 WHERE `id`=14506;
@@ -882,70 +954,138 @@ UPDATE `creature` SET `patch_min`=2 WHERE `id`=14506;
 UPDATE `creature_loot_template` SET `patch_min`=2 WHERE `item`=34011;
 -- ERROR:Table 'reference_loot_template' entry 324896 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324894 (reference id) not exist but used as loot id in DB.
-UPDATE `creature_loot_template` SET `patch`=1 WHERE `entry`=11488;
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11488;
 UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11488;
 UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11488;
 UPDATE `creature` SET `patch_min`=1 WHERE `id`=11488;
 -- ERROR:Table 'reference_loot_template' entry 330001 (reference id) not exist but used as loot id in DB.
 UPDATE `creature_loot_template` SET `patch_min`=2 WHERE `item`=330001;
 -- ERROR:Table 'reference_loot_template' entry 324812 (reference id) not exist but used as loot id in DB.
-UPDATE `creature_loot_template` SET `patch`=1 WHERE `entry`=11467;
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11467;
 UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11467;
 UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11467;
 UPDATE `creature` SET `patch_min`=1 WHERE `id`=11467;
 -- ERROR:Table 'reference_loot_template' entry 324887 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324886 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11486;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11486;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11486;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=11486;
 -- ERROR:Table 'reference_loot_template' entry 324892 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324890 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11487;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11487;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11487;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=11487;
 -- ERROR:Table 'reference_loot_template' entry 324898 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324900 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11489;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11489;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11489;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=11489;
 -- ERROR:Table 'reference_loot_template' entry 324919 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324920 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324918 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11501;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11501;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11501;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=11501;
 -- ERROR:Table 'reference_loot_template' entry 328307 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14349;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14349;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14349;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14349;
 -- ERROR:Table 'reference_loot_template' entry 318124 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `item`=318124;
 -- ERROR:Table 'reference_loot_template' entry 328262 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 328260 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14321;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14321;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14321;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14321;
 -- ERROR:Table 'reference_loot_template' entry 328280 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 328279 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14327;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14327;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14327;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14327;
 -- ERROR:Table 'reference_loot_template' entry 34011 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=2 WHERE `item`=34011;
 -- ERROR:Table 'reference_loot_template' entry 324902 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324904 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324905 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 34011 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11490;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11490;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11490;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=11490;
 -- ERROR:Table 'reference_loot_template' entry 324915 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324914 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 324913 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=11496;
+UPDATE `skinning_loot_template` SET `patch_min`=1 WHERE `entry`=11496;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=11496;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=11496;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=11496;
 -- ERROR:Table 'reference_loot_template' entry 327339 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 327342 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 327341 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=13280;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=13280;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=13280;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=13280;
 -- ERROR:Table 'reference_loot_template' entry 328315 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 328317 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 34011 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14354;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14354;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14354;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14354;
 -- ERROR:Table 'reference_loot_template' entry 328273 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 328275 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14325;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14325;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14325;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14325;
 -- ERROR:Table 'reference_loot_template' entry 328269 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 328271 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 34011 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14324;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14324;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14324;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14324;
 -- ERROR:Table 'reference_loot_template' entry 328266 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 328265 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14323;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14323;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14323;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14323;
 -- ERROR:Table 'reference_loot_template' entry 328276 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=14326;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=14326;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=14326;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=14326;
 -- ERROR:Table 'reference_loot_template' entry 315718 (reference id) not exist but used as loot id in DB.
 -- ERROR:Table 'reference_loot_template' entry 315719 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=1 WHERE `entry`=6109;
+UPDATE `skinning_loot_template` SET `patch_min`=1 WHERE `entry`=6109;
+UPDATE `creature_template` SET `patch`=1 WHERE `entry`=6109;
+UPDATE `creature_template_addon` SET `patch`=1 WHERE `entry`=6109;
+UPDATE `creature` SET `patch_min`=1 WHERE `id`=6109;
 -- ERROR:Table 'reference_loot_template' entry 328501 (reference id) not exist but used as loot id in DB.
+UPDATE `creature_loot_template` SET `patch_min`=2 WHERE `entry`=14516;
+UPDATE `creature_template` SET `patch`=2 WHERE `entry`=14516;
+UPDATE `creature_template_addon` SET `patch`=2 WHERE `entry`=14516;
+UPDATE `creature` SET `patch_min`=2 WHERE `id`=14516;
 -- ERROR:Table 'reference_loot_template' entry 12008 (reference id) not exist but used as loot id in DB.
+UPDATE `gameobject_loot_template` SET `patch_min`=1 WHERE `mincountOrRef`=-12008;
 -- ERROR:Table 'reference_loot_template' entry 12000 (reference id) not exist but used as loot id in DB.
+UPDATE `gameobject_loot_template` SET `patch_min`=2 WHERE `mincountOrRef`=-12000;
 -- ERROR:Table 'reference_loot_template' entry 12001 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12008 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12008 (reference id) not exist but used as loot id in DB.
+UPDATE `gameobject_loot_template` SET `patch_min`=2 WHERE `mincountOrRef`=-12001;
 -- ERROR:Table 'reference_loot_template' entry 12016 (reference id) not exist but used as loot id in DB.
+UPDATE `gameobject_loot_template` SET `patch_min`=1 WHERE `mincountOrRef`=-12016;
 -- ERROR:Table 'reference_loot_template' entry 12015 (reference id) not exist but used as loot id in DB.
+UPDATE `gameobject_loot_template` SET `patch_min`=1 WHERE `mincountOrRef`=-12015;
 -- ERROR:Table 'reference_loot_template' entry 12017 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12008 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12015 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12016 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12015 (reference id) not exist but used as loot id in DB.
--- ERROR:Table 'reference_loot_template' entry 12008 (reference id) not exist but used as loot id in DB.
+UPDATE `gameobject_loot_template` SET `patch_min`=1 WHERE `mincountOrRef`=-12017;
 
 -- ERROR:Table 'gameobject_loot_template' entry 16523 (gameobject lootid) not exist but used as loot id in DB.
 UPDATE `gameobject_template` SET `patch`=1 WHERE `entry`=179516;
@@ -959,6 +1099,9 @@ UPDATE `gameobject` SET `patch_min`=1 WHERE `id`=179559;
 -- ERROR:Table 'gameobject_loot_template' entry 16593 (gameobject lootid) not exist but used as loot id in DB.
 UPDATE `gameobject_template` SET `patch`=1 WHERE `entry`=179565;
 UPDATE `gameobject` SET `patch_min`=1 WHERE `id`=179565;
+-- ERROR:Table 'gameobject_loot_template' entry 16719 (gameobject lootid) not exist but used as loot id in DB.
+UPDATE `gameobject_template` SET `patch`=2 WHERE `entry`=179703;
+UPDATE `gameobject` SET `patch_min`=2 WHERE `id`=179703;
 
 -- Remove placeholders previously used to fix errors.
 DELETE FROM `item_template` WHERE `name` LIKE "%[DISABLED]%";
@@ -1011,6 +1154,13 @@ UPDATE `creature_ai_scripts` SET `action2_param1`=10786 WHERE `id`=511101;
 UPDATE `creature_ai_scripts` SET `action2_param1`=10798 WHERE `id`=674101;
 UPDATE `broadcast_text` SET `EmoteId0`=19 WHERE `ID` IN (10786, 10798);
 DELETE FROM `creature_ai_texts` WHERE `entry`=-1473;
+UPDATE `creature_ai_scripts` SET `action1_param1`=9407 WHERE `id`=1148601;
+UPDATE `broadcast_text` SET `Type`=1 WHERE `ID`=9407;
+DELETE FROM `creature_ai_texts` WHERE `entry`=-553;
+UPDATE `creature_ai_scripts` SET `action2_param1`=9413 WHERE `id`=1432105;
+UPDATE `creature_ai_scripts` SET `action2_param1`=9413 WHERE `id`=1432305;
+UPDATE `creature_ai_scripts` SET `action2_param1`=9413 WHERE `id`=1432605;
+DELETE FROM `creature_ai_texts` WHERE `entry`=-648;
 
 
 -- End of migration.
