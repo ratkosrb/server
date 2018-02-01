@@ -1190,7 +1190,11 @@ void World::SetInitialWorldSettings()
         CharacterDatabase.PExecute("DELETE FROM corpse WHERE corpse_type = '0' OR time < (UNIX_TIMESTAMP()-'%u')", 3 * DAY);
     }
 
+    sLog.outString();
     sSpellMgr.LoadSpells();
+
+    sLog.outString();
+    sObjectMgr.LoadFactions();
 
     ///- Load the DBC files
     sLog.outString("Initialize data stores...");

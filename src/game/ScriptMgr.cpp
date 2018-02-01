@@ -571,7 +571,7 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
             }
             case SCRIPT_COMMAND_SET_FACTION:
             {
-                if (tmp.faction.factionId && !sFactionStore.LookupEntry(tmp.faction.factionId))
+                if (tmp.faction.factionId && !sObjectMgr.GetFactionEntry(tmp.faction.factionId))
                 {
                     sLog.outErrorDb("Table `%s` has datalong2 = %u in SCRIPT_COMMAND_SET_FACTION for script id %u, but this faction does not exist.", tablename, tmp.faction.factionId, tmp.id);
                     continue;
