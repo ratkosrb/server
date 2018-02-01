@@ -7378,6 +7378,53 @@ void ObjectMgr::LoadGameObjectForQuests()
     sLog.outString(">> Loaded %u GameObjects for quests", count);
 }
 
+void ObjectMgr::LoadSoundEntries()
+{
+    sLog.outString("Loading sounds ...");
+
+    // Getting the maximum ID.
+    QueryResult* result = WorldDatabase.Query("SELECT MAX(ID) FROM sound_entries");
+
+    if (!result)
+    {
+        sLog.outString(">> Loaded 0 sounds. DB table `sound_entries` is empty.");
+        return;
+    }
+    auto fields = result->Fetch();
+    uint32 maxSoundEntry = fields[0].GetUInt32() + 1;
+    delete result;
+
+    // Actually loading the sounds.
+    result = WorldDatabase.Query("SELECT * FROM sound_entries");
+
+    if (!result)
+    {
+        sLog.outString(">> Loaded 0 sounds. DB table `sound_entries` is empty.");
+        return;
+    }
+
+    mSoundEntries.resize(maxSoundEntry, nullptr);
+
+    do
+    {
+        fields = result->Fetch();
+
+        SoundEntriesEntry* sound = new SoundEntriesEntry();
+        uint32 soundId = fields[0].GetUInt32();
+
+        sound->Id = soundId;
+        sound->Name = fields[1].GetCppString();
+
+        mSoundEntries[soundId] = sound;
+
+    } while (result->NextRow());
+
+    delete result;
+
+    sLog.outString();
+    sLog.outString(">> Loaded %u sound entries.", maxSoundEntry);
+}
+
 void ObjectMgr::LoadBroadcastTexts()
 {
     mBroadcastTextLocaleMap.clear(); // for reload case
@@ -7414,7 +7461,7 @@ void ObjectMgr::LoadBroadcastTexts()
 
         if (bct.SoundId)
         {
-            if (!sSoundEntriesStore.LookupEntry(bct.SoundId))
+            if (!GetSoundEntry(bct.SoundId))
             {
                 sLog.outErrorDb("BroadcastText (Id: %u) in table `broadcast_text` has SoundId %u but sound does not exist.", bct.Id, bct.SoundId);
                 bct.SoundId = 0;
@@ -7678,7 +7725,7 @@ bool ObjectMgr::LoadMangosStrings(DatabaseType& db, char const* table, int32 min
             data.LanguageId  = Language(fields[12].GetUInt32());
             data.Emote       = fields[13].GetUInt32();
 
-            if (data.SoundId && !sSoundEntriesStore.LookupEntry(data.SoundId))
+            if (data.SoundId && !GetSoundEntry(data.SoundId))
             {
                 sLog.outErrorDb("Entry %i in table `%s` has soundId %u but sound does not exist.", entry, table, data.SoundId);
                 data.SoundId = 0;
