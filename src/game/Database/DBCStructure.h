@@ -288,7 +288,7 @@ struct FactionEntry
     uint32      team;                                       // 18       m_parentFactionID
     char*       name[8];                                    // 19-26    m_name_lang
                                                             // 27 string flags
-    //char*     description[8];                             // 28-35    m_description_lang
+    char*     description[8];                             // 28-35    m_description_lang
                                                             // 36 string flags
 
     // helpers

@@ -52,6 +52,8 @@
 #include "InstanceData.h"
 #include "CharacterDatabaseCache.h"
 #include "HardcodedEvents.h"
+#include "fstream"
+#include "iostream"
 
 #include <limits>
 
@@ -169,7 +171,115 @@ ObjectMgr::~ObjectMgr()
     for (PlayerCacheDataMap::iterator itr = m_playerCacheData.begin(); itr != m_playerCacheData.end(); ++itr)
         delete itr->second;
 }
+std::string ReplaceString(std::string subject) {
+    if (subject.empty()) { return std::string(); }
+    size_t pos = 0;
+    for (int i = 0; i < subject.length(); i++)
+    {
+        if (subject.at(i) == 13) //r
+            subject.at(i) = '^';
+        else if (subject.at(i) == 10) //n
+            subject.at(i) = '{';
+        else if (subject.at(i) == 39) //'
+            subject.at(i) = '}';
+    }
+    return subject;
 
+}
+void ObjectMgr::ExportFactionDBCs()
+{
+    {
+        sLog.outString("Extracting factions ...");
+
+        std::ofstream myfile("faction.sql");
+        if (myfile.is_open())
+        {
+            myfile << "-- Dumping faction data\n-- Remember to replace substitute symbols.\n-- ^ is \\r\n-- { is \\n\n-- } is \\'\n";
+            for (uint32 i = 0; i < sFactionStore.GetNumRows(); ++i)
+            {
+                if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(i))
+                {
+                    myfile << "INSERT INTO `faction` VALUES (";
+                    myfile << factionEntry->ID << ", "; // 1
+                    myfile << factionEntry->reputationListID << ", ";// 2
+                    myfile << factionEntry->BaseRepRaceMask[0] << ", "; // 3
+                    myfile << factionEntry->BaseRepRaceMask[1] << ", "; // 4
+                    myfile << factionEntry->BaseRepRaceMask[2] << ", "; // 5
+                    myfile << factionEntry->BaseRepRaceMask[3] << ", "; // 6
+                    myfile << factionEntry->BaseRepClassMask[0] << ", "; // 7
+                    myfile << factionEntry->BaseRepClassMask[1] << ", "; // 8
+                    myfile << factionEntry->BaseRepClassMask[2] << ", "; // 9
+                    myfile << factionEntry->BaseRepClassMask[3] << ", "; // 10
+                    myfile << factionEntry->BaseRepValue[0] << ", "; // 11
+                    myfile << factionEntry->BaseRepValue[1] << ", "; // 12
+                    myfile << factionEntry->BaseRepValue[2] << ", "; // 13
+                    myfile << factionEntry->BaseRepValue[3] << ", "; // 14
+                    myfile << factionEntry->ReputationFlags[0] << ", "; // 15
+                    myfile << factionEntry->ReputationFlags[1] << ", "; // 16
+                    myfile << factionEntry->ReputationFlags[2] << ", "; // 17
+                    myfile << factionEntry->ReputationFlags[3] << ", "; // 18
+                    myfile << factionEntry->team << ", "; // 19
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[0])) << "', "; // 20
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[1])) << "', "; // 21
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[2])) << "', "; // 22
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[3])) << "', "; // 23
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[4])) << "', "; // 24
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[5])) << "', "; // 25
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[6])) << "', "; // 26
+                    myfile << "'" << ReplaceString(std::string(factionEntry->name[7])) << "', "; // 27
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[0])) << "', "; // 28
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[1])) << "', "; // 29
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[2])) << "', "; // 30
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[3])) << "', "; // 31
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[4])) << "', "; // 32
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[5])) << "', "; // 33
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[6])) << "', "; // 34
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[7])) << "');\n"; // 35
+                }
+            }
+            myfile.close();
+        }
+        sLog.outString("Finished faction extraction.");
+    }
+
+    {
+        sLog.outString("Extracting factions templates ...");
+
+        std::ofstream myfile("faction_template.sql");
+        if (myfile.is_open())
+        {
+            myfile << "-- Dumping faction_template data\n-- Remember to replace substitute symbols.\n-- ^ is \\r\n-- { is \\n\n-- } is \\'\n";
+            for (uint32 i = 0; i < sFactionTemplateStore.GetNumRows(); ++i)
+            {
+                if (FactionTemplateEntry const* factionEntry = sFactionTemplateStore.LookupEntry(i))
+                {
+                    myfile << "INSERT INTO `faction_template` VALUES (";
+                    myfile << factionEntry->ID << ", "; // 1
+                    myfile << factionEntry->faction << ", ";// 2
+                    myfile << factionEntry->factionFlags << ", "; // 3
+                    myfile << factionEntry->ourMask << ", "; // 4
+                    myfile << factionEntry->friendlyMask << ", "; // 5
+                    myfile << factionEntry->hostileMask << ", "; // 6
+                    myfile << factionEntry->enemyFaction[0] << ", "; // 7
+                    myfile << factionEntry->enemyFaction[1] << ", "; // 8
+                    myfile << factionEntry->enemyFaction[2] << ", "; // 9
+                    myfile << factionEntry->enemyFaction[3] << ", "; // 10
+                    myfile << factionEntry->friendFaction[0] << ", "; // 11
+                    myfile << factionEntry->friendFaction[1] << ", "; // 12
+                    myfile << factionEntry->friendFaction[2] << ", "; // 13
+                    myfile << factionEntry->friendFaction[3] << ");\n"; // 14
+                }
+            }
+            myfile.close();
+        }
+        sLog.outString("Finished faction template extraction.");
+    }
+
+    system("pause");
+
+    World::StopNow(SHUTDOWN_EXIT_CODE);
+    exit(0);
+}
 void ObjectMgr::LoadAllIdentifiers()
 {
     m_ItemIdSet.clear();

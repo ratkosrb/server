@@ -575,6 +575,7 @@ bool Database::HasAsyncQuery()
 
 bool Database::CheckRequiredMigrations(const char **migrations)
 {
+    return true;
     std::set<std::string> appliedMigrations;
 
     QueryResult *result = Query("SELECT * FROM `migrations`");
