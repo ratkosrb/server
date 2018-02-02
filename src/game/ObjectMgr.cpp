@@ -52,6 +52,8 @@
 #include "InstanceData.h"
 #include "CharacterDatabaseCache.h"
 #include "HardcodedEvents.h"
+#include <fstream>
+#include <iostream>
 
 #include <limits>
 
@@ -168,6 +170,168 @@ ObjectMgr::~ObjectMgr()
 
     for (PlayerCacheDataMap::iterator itr = m_playerCacheData.begin(); itr != m_playerCacheData.end(); ++itr)
         delete itr->second;
+}
+
+template<typename T>
+bool AreVectorsSame(const std::vector<T>& i_Vec1, const std::vector<T>& i_Vec2)
+{
+    if (i_Vec1.size() != i_Vec2.size())
+        return false;
+
+    for (size_t i = 0;i<i_Vec1.size();i++)
+        if (!(i_Vec1[i] == i_Vec2[i]))
+            return false;
+
+    return true;
+}
+
+void ObjectMgr::ReferenceTemplatesCheck()
+{
+    m_referencetemplates.clear();
+
+    Field* fields;
+    QueryResult* result = WorldDatabase.Query("SELECT MAX(entry) FROM reference_loot_template");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 max = fields[0].GetUInt32();
+            m_referencetemplates.resize(max);
+        } while (result->NextRow());
+        delete result;
+    }
+
+    result = WorldDatabase.Query("SELECT * FROM reference_loot_template ORDER BY entry, item");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 entry = fields[0].GetUInt32();
+            uint32 item = fields[1].GetUInt32();
+            float chance = fields[2].GetFloat();
+            uint32 groupid = fields[3].GetUInt32();
+            int32 mincount = fields[4].GetInt32();
+            uint32 maxcount = fields[5].GetUInt32();
+            uint32 condition = fields[6].GetUInt32();
+
+            LoootEntries& data = m_referencetemplates[entry];
+            data.emplace_back(entry, item, chance, groupid, mincount, maxcount, condition);
+            
+        } while (result->NextRow());
+        delete result;
+    }
+
+    std::ofstream myfile("lootreferences.sql");
+    if (myfile.is_open())
+    {
+        for (auto& loot_entry : m_referencetemplates)
+        {
+            if (loot_entry.empty())
+                continue;
+
+            for (auto& loot_entry2 : m_referencetemplates)
+            {
+                if (loot_entry2.empty())
+                    continue;
+
+                if (loot_entry[0].entry == loot_entry2[0].entry)
+                    continue;
+
+                if (AreVectorsSame(loot_entry, loot_entry2))
+                {
+                    myfile << "-- Replacing " << loot_entry2[0].entry << " with " << loot_entry[0].entry << ".\n";
+                    myfile << "UPDATE `creature_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `gameobject_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `skinning_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `pickpocketing_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `fishing_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `item_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `disenchant_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "UPDATE `mail_loot_template` SET `item`=" << loot_entry[0].entry << ", `mincountOrRef`=-" << loot_entry[0].entry << " WHERE `mincountOrRef`=-" << loot_entry2[0].entry << ";\n";
+                    myfile << "DELETE FROM `reference_loot_template` WHERE `entry`=" << loot_entry2[0].entry << ";\n\n";
+                    loot_entry2 = loot_entry;
+                }
+            }
+        }
+        myfile.close();
+    }
+}
+
+void ObjectMgr::ReferenceTemplatesSquish()
+{
+    m_referencetemplates.clear();
+
+    Field* fields;
+    QueryResult* result = WorldDatabase.Query("SELECT MAX(entry) FROM reference_loot_template");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 max = fields[0].GetUInt32();
+            m_referencetemplates.resize(max);
+        } while (result->NextRow());
+        delete result;
+    }
+
+    result = WorldDatabase.Query("SELECT * FROM reference_loot_template ORDER BY entry, item");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 entry = fields[0].GetUInt32();
+            uint32 item = fields[1].GetUInt32();
+            float chance = fields[2].GetFloat();
+            uint32 groupid = fields[3].GetUInt32();
+            int32 mincount = fields[4].GetInt32();
+            uint32 maxcount = fields[5].GetUInt32();
+            uint32 condition = fields[6].GetUInt32();
+
+            LoootEntries& data = m_referencetemplates[entry];
+            data.emplace_back(entry, item, chance, groupid, mincount, maxcount, condition);
+
+        } while (result->NextRow());
+        delete result;
+    }
+    uint32 lastId = 29999;
+    std::ofstream myfile("lootsquish.sql");
+    if (myfile.is_open())
+    {
+        for (auto& loot_entry : m_referencetemplates)
+        {
+            if (loot_entry.empty())
+                continue;
+
+            uint32 newId = lastId + 1;
+            if (loot_entry[0].entry > newId)
+            {
+                myfile << "-- Changing entry of " << loot_entry[0].entry << " to " << newId << ".\n";
+                myfile << "UPDATE `creature_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `gameobject_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `skinning_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `pickpocketing_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `fishing_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `item_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `disenchant_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `mail_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `reference_loot_template` SET `item`=" << newId << ", `mincountOrRef`=-" << newId << " WHERE `mincountOrRef`=-" << loot_entry[0].entry << ";\n";
+                myfile << "UPDATE `reference_loot_template` SET `entry`=" << newId << " WHERE `entry`=" << loot_entry[0].entry << ";\n\n";
+            }
+            else if (loot_entry[0].entry < newId)
+                continue;
+
+            lastId = newId;
+
+        }
+        myfile.close();
+    }
 }
 
 void ObjectMgr::LoadAllIdentifiers()

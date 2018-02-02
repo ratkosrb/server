@@ -1197,6 +1197,10 @@ void World::SetInitialWorldSettings()
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
     sObjectMgr.SetDBCLocaleIndex(GetDefaultDbcLocale());    // Get once for all the locale index of DBC language (console/broadcasts)
+
+    sLog.outString("Removing duplicated loot...");
+    //sObjectMgr.ReferenceTemplatesCheck();
+    //sObjectMgr.ReferenceTemplatesSquish();
     
     sLog.outString("Loading Script Names...");
     sScriptMgr.LoadScriptNames();

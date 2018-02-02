@@ -640,6 +640,29 @@ public:
 
 class PvPMaintenanceMaker;
 
+struct LoootTemplate
+{
+    uint32 entry;
+    uint32 item;
+    float chance;
+    uint32 groupid;
+    int32 mincount;
+    uint32 maxcount;
+    uint32 condition;
+
+    LoootTemplate(uint32 Entryy, uint32 Itemm, float Chance, uint32 GroupIdd, int32 Mincount, uint32 Maxcount, uint32 Condition) : entry(Entryy), item(Itemm), chance(Chance), groupid(GroupIdd), mincount(Mincount), maxcount(Maxcount), condition(Condition) {}
+
+    bool operator==(const LoootTemplate  &f) const
+    {
+        if ((item == f.item) && (chance == f.chance) && (mincount == f.mincount) && (maxcount == f.maxcount) && (condition == f.condition) && (groupid == f.groupid))
+            return true;
+        return false;
+    }
+};
+
+typedef std::vector<LoootTemplate>  LoootEntries;
+
+
 class ObjectMgr
 {
     friend class PlayerDumpReader;
@@ -647,6 +670,11 @@ class ObjectMgr
     public:
         ObjectMgr();
         ~ObjectMgr();
+
+        std::vector<LoootEntries> m_referencetemplates;
+
+        void ReferenceTemplatesCheck();
+        void ReferenceTemplatesSquish();
 
         // Stores all existing ids in the database, not necessarily valid or loaded.
         void LoadAllIdentifiers();
