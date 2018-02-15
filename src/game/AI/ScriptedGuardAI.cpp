@@ -37,26 +37,40 @@ EndScriptData */
 #define SAY_GUARD_SIL_AGGRO2        -1000199
 #define SAY_GUARD_SIL_AGGRO3        -1000200
 
+#define EVENT_VALENTINES             8
+#define SPELL_COLOGNE                26681
+#define SPELL_PERFUME                26682
+#define SPELL_LOVE_IN_AIR            27741
+#define SPELL_AMOROUS                26869
+
+
 guardAI::guardAI(Creature* pCreature, bool isCapitalGuard) : ScriptedAI(pCreature),
     GlobalCooldown(0),
     BuffTimer(0),
     CapitalGuard(isCapitalGuard)
-{}
+{
+    Gender = sObjectMgr.GetCreatureModelInfo(pCreature->GetDisplayId())->gender;
+    Reset();
+}
 
 void guardAI::Reset()
 {
+    
     GlobalCooldown = 0;
     BuffTimer = 0;                                          //Rebuff as soon as we can
 }
 
 void guardAI::MoveInLineOfSight(Unit* pWho)
 {
-    // Valentines Event aura on capital guards
-    if (CapitalGuard && sGameEventMgr.IsActiveEvent(8) && (pWho->HasAura(26681) || pWho->HasAura(26682)))
-        m_creature->AddAura(27741, ADD_AURA_PERMANENT);
-
+    // Valentine Event Aura
+    if (CapitalGuard && sGameEventMgr.IsActiveEvent(EVENT_VALENTINES) && m_creature->HasAura(SPELL_AMOROUS))
+    {
+        if (Gender == GENDER_FEMALE && pWho->HasAura(SPELL_COLOGNE) || (Gender != GENDER_FEMALE && pWho->HasAura(SPELL_PERFUME)))
+            m_creature->AddAura(SPELL_LOVE_IN_AIR, ADD_AURA_PERMANENT);
+    }
     ScriptedAI::MoveInLineOfSight(pWho);
 }
+
 
 void guardAI::Aggro(Unit *who)
 {

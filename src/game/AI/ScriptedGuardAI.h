@@ -17,6 +17,7 @@ struct MANGOS_DLL_DECL guardAI : public ScriptedAI
 
     uint32 GlobalCooldown;                                  //This variable acts like the global cooldown that players have (1.5 seconds)
     uint32 BuffTimer;                                       //This variable keeps track of buffs
+    uint8 Gender;
     bool CapitalGuard;
 
 
