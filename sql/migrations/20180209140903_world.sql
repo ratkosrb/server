@@ -1,4 +1,4 @@
-DELETE FROM `migrations` WHERE `id`='20180209140903';
+-- DELETE FROM `migrations` WHERE `id`='20180209140903';
 
 DROP PROCEDURE IF EXISTS add_migration;
 DROP PROCEDURE IF EXISTS `TempValentineGossip`;
@@ -1162,7 +1162,10 @@ FROM creature_template WHERE entry IN (5178,14723,14724,5174,5119,5132,5112,5140
 
 
 -- Items 10 day duration
-UPDATE `item_template` SET `Duration`=864000 WHERE entry in (21812,22239,22236,22238,22237,22218);
+UPDATE `item_template` SET `Duration`=864000, `ExtraFlags`=1 WHERE entry in (21812,22239,22236,22238,22237,22218);
+
+-- Delete Black dress from forbidden list
+DELETE FROM `forbidden_items` WHERE `entry`=22279;
 
 
 -- End of migration.
