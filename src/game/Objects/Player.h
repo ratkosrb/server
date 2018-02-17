@@ -2173,8 +2173,11 @@ class MANGOS_DLL_SPEC Player final: public Unit
 
         inline bool HasScheduledEvent() const { return m_Events.HasScheduledEvent(); }
         void SetAutoInstanceSwitch(bool v) { m_enableInstanceSwitch = v; }
+        void SetPendingInstanceSwitch(bool v) { m_pendingInstanceSwitch = v; }
+        bool IsPendingInstanceSwitch() const { return m_pendingInstanceSwitch; }
     protected:
         bool   m_enableInstanceSwitch;
+        bool   m_pendingInstanceSwitch;
         uint32 m_skippedUpdateTime;
         uint32 m_DetectInvTimer;
 

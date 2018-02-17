@@ -409,7 +409,8 @@ UpdateMask Player::updateVisualBits;
 Player::Player(WorldSession *session) : Unit(),
     m_mover(this), m_camera(this), m_reputationMgr(this),
     m_enableInstanceSwitch(true), m_currentTicketCounter(0),
-    m_honorMgr(this), m_bNextRelocationsIgnored(0)
+    m_honorMgr(this), m_bNextRelocationsIgnored(0),
+    m_pendingInstanceSwitch(false)
 {
     m_objectType |= TYPEMASK_PLAYER;
     m_objectTypeId = TYPEID_PLAYER;
@@ -1148,6 +1149,37 @@ void Player::SetDrunkValue(uint16 newDrunkenValue, uint32 itemId)
         m_detectInvisibilityMask &= ~(1 << 6);
 }
 
+// Used to update attacker creatures (including pets' attackers) combat status when a player switches map
+struct UpdateAttackersCombatHelper
+{
+    explicit UpdateAttackersCombatHelper(Player* _player) : player(_player) {}
+    void operator()(Unit* unit) const
+    {
+        for (Unit* attacker : unit->getAttackers())
+            if (attacker->IsCreature() && attacker->getVictim() == unit)
+            {
+                bool hasValidThreat = false;
+                ThreatList const& threatList = attacker->getThreatManager().getThreatList();
+                for (const auto threat : threatList)
+                    if (Unit* unit = threat->getTarget())
+                    {
+                        if (unit->GetCharmerOrOwnerPlayerOrPlayerItself() == player)
+                            continue;
+                        if (unit->IsInMap(attacker) &&
+                            (!unit->IsPlayer() ||
+                                !(unit->ToPlayer()->IsBeingTeleportedFar() || unit->ToPlayer()->IsPendingInstanceSwitch())))
+                        {
+                            hasValidThreat = true;
+                            break;
+                        }
+                    }
+                if (!hasValidThreat)
+                    attacker->ToCreature()->OnLeaveCombat();
+            }
+    }
+    Player* player;
+};
+
 void Player::Update(uint32 update_diff, uint32 p_time)
 {
     if (!IsInWorld())
@@ -1356,7 +1388,14 @@ void Player::Update(uint32 update_diff, uint32 p_time)
         uint16 newInstanceId = sMapMgr.GetContinentInstanceId(GetMap()->GetId(), GetPositionX(), GetPositionY(), &transition);
         if (newInstanceId != GetInstanceId())
             if (!transition || !isInCombat())
+            {
                 sMapMgr.ScheduleInstanceSwitch(this, newInstanceId);
+
+                // Update attacker creatures combat status if needed
+                UpdateAttackersCombatHelper helper(this);
+                helper(this);
+                CallForAllControlledUnits(helper, CONTROLLED_PET | CONTROLLED_TOTEMS | CONTROLLED_GUARDIANS | CONTROLLED_CHARM);
+            }
     }
     if (IsInWorld())
     {
@@ -1967,6 +2006,11 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         ScheduledTeleportData *data = new ScheduledTeleportData(mapid, x, y, z, orientation, options, recover);
 
         sMapMgr.ScheduleFarTeleport(this, data);
+
+        // Update attacker creatures combat status if needed
+        UpdateAttackersCombatHelper helper(this);
+        helper(this);
+        CallForAllControlledUnits(helper, CONTROLLED_PET | CONTROLLED_TOTEMS | CONTROLLED_GUARDIANS | CONTROLLED_CHARM);
     }
     return true;
 }
