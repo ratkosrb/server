@@ -141,16 +141,16 @@ struct SoundEntriesEntry
 
 struct CreatureSpellsEntry
 {
-    const uint16 spellId;
-    const uint8  probability;
-    const uint8  castTarget;
-    const uint8  castFlags;
+    const uint32 spellId;
+    const uint32  probability;
+    const uint32  castTarget;
+    const uint32  castFlags;
     const uint32 delayInitialMin;
     const uint32 delayInitialMax;
     const uint32 delayRepeatMin;
     const uint32 delayRepeatMax;
     const uint32 scriptId;
-    CreatureSpellsEntry(uint16 Id, uint8 Probability, uint8 CastTarget, uint8 CastFlags, uint32 InitialMin, uint32 InitialMax, uint32 RepeatMin, uint32 RepeatMax, uint32 ScriptId) : spellId(Id), probability(Probability), castTarget(CastTarget), castFlags(CastFlags), delayInitialMin(InitialMin), delayInitialMax(InitialMax), delayRepeatMin(RepeatMin), delayRepeatMax(RepeatMax), scriptId(ScriptId) {}
+    CreatureSpellsEntry(uint32 Id, uint32 Probability, uint32 CastTarget, uint32 CastFlags, uint32 InitialMin, uint32 InitialMax, uint32 RepeatMin, uint32 RepeatMax, uint32 ScriptId) : spellId(Id), probability(Probability), castTarget(CastTarget), castFlags(CastFlags), delayInitialMin(InitialMin), delayInitialMax(InitialMax), delayRepeatMin(RepeatMin), delayRepeatMax(RepeatMax), scriptId(ScriptId) {}
 };
 
 typedef std::vector<CreatureSpellsEntry> CreatureSpellsTemplate;
@@ -553,6 +553,8 @@ class ObjectMgr
     public:
         ObjectMgr();
         ~ObjectMgr();
+
+        void EventToSpells();
 
         // Stores all existing ids in the database, not necessarily valid or loaded.
         void LoadAllIdentifiers();

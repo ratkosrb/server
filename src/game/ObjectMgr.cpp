@@ -52,6 +52,8 @@
 #include "InstanceData.h"
 #include "CharacterDatabaseCache.h"
 #include "HardcodedEvents.h"
+#include <fstream>
+#include <iostream>
 
 #include <limits>
 
@@ -165,6 +167,115 @@ ObjectMgr::~ObjectMgr()
 
     for (PlayerCacheDataMap::iterator itr = m_playerCacheData.begin(); itr != m_playerCacheData.end(); ++itr)
         delete itr->second;
+}
+
+inline uint32 AdjustTimerToSeconds(uint32 timer)
+{
+    if ((timer != 0) && (timer < 500))
+        timer = 0;
+    if ((timer != 0) && (timer < 1000))
+        timer = 1000;
+    timer = timer / 1000;
+
+    return timer;
+}
+
+std::string ReplaceString(std::string subject) {
+    if (subject.empty()) { return std::string(); }
+    size_t pos = 0;
+    for (int i = 0; i < subject.length(); i++)
+        {
+        if (subject.at(i) == 39) //'
+            subject.at(i) = ' ';
+        }
+    return subject;
+}
+
+void ObjectMgr::EventToSpells()
+{
+    std::ofstream myfile("creaturespells.sql");
+    if (!myfile.is_open())
+        return;
+
+    CreatureSpellsMap creature_spells;
+
+    Field* fields;
+    QueryResult* result = WorldDatabase.Query("SELECT id, creature_id, event_chance, event_param1, event_param2, event_param3, event_param4, action1_param1, action1_param2, action1_param3 FROM creature_ai_scripts WHERE event_type=0 && action1_type=11 && action2_type=0 && action3_type=0 && (event_flags & 1) && creature_id NOT IN (SELECT creature_id FROM creature_ai_scripts WHERE event_inverse_phase_mask!=0) ORDER BY creature_id, id");
+    printf("Query done.\n");
+    myfile << "-- Remove replaced AI actions.\n";
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 id = fields[0].GetUInt32();
+            uint32 creature_id = fields[1].GetUInt32();
+            uint32 chance = fields[2].GetUInt32();
+            uint32 delayInitialMin = fields[3].GetUInt32();
+            delayInitialMin = AdjustTimerToSeconds(delayInitialMin);
+            uint32 delayInitialMax = fields[4].GetUInt32();
+            delayInitialMax = AdjustTimerToSeconds(delayInitialMax);
+            uint32 delayRepeatMin = fields[5].GetUInt32();
+            delayRepeatMin = AdjustTimerToSeconds(delayRepeatMin);
+            uint32 delayRepeatMax = fields[6].GetUInt32();
+            delayRepeatMax = AdjustTimerToSeconds(delayRepeatMax);
+
+            uint32 spell_id = fields[7].GetUInt32();
+            uint32 target = fields[8].GetUInt32();
+            uint32 cast_flags = fields[9].GetUInt32();
+
+            auto spell_template_map = creature_spells.find(creature_id);
+
+            if (spell_template_map != creature_spells.end())
+            {
+                CreatureSpellsTemplate* spellsTemplate = &spell_template_map->second;
+                spellsTemplate->emplace_back(spell_id, chance, target, cast_flags, delayInitialMin, delayInitialMax, delayRepeatMin, delayRepeatMax, 0);
+            }
+            else
+            {
+                CreatureSpellsTemplate spellsTemplate;
+                spellsTemplate.emplace_back(spell_id, chance, target, cast_flags, delayInitialMin, delayInitialMax, delayRepeatMin, delayRepeatMax, 0);
+                creature_spells.insert(CreatureSpellsMap::value_type(creature_id, spellsTemplate));
+            }
+
+            myfile << "DELETE FROM `creature_ai_scripts` WHERE `id`=" << id << ";\n";
+        } while (result->NextRow());
+        delete result;
+    }
+    myfile << "\n\n-- Add new creature_spells templates.\n";
+    myfile << "INSERT INTO `creature_spells` VALUES\n";
+    for (auto spellsTemplate : creature_spells)
+    {
+        myfile << "(" << spellsTemplate.first << "0, '" << ReplaceString(GetCreatureTemplate(spellsTemplate.first)->Name) << "'";
+        for (int i = 0; i < 8; i++)
+        {
+            if (i < spellsTemplate.second.size())
+            {
+                myfile << ", " << spellsTemplate.second[i].spellId;
+                myfile << ", " << spellsTemplate.second[i].probability;
+                myfile << ", " << spellsTemplate.second[i].castTarget;
+                myfile << ", " << spellsTemplate.second[i].castFlags;
+                myfile << ", " << spellsTemplate.second[i].delayInitialMin;
+                myfile << ", " << spellsTemplate.second[i].delayInitialMax;
+                myfile << ", " << spellsTemplate.second[i].delayRepeatMin;
+                myfile << ", " << spellsTemplate.second[i].delayRepeatMax;
+                myfile << ", " << spellsTemplate.second[i].scriptId;
+            }
+            else
+            {
+                myfile << ", 0, 0, 0, 0, 0, 0, 0, 0, 0";
+            }
+        }
+        myfile << "),\n";
+    }
+    myfile << "\n\n-- Assign spell templates to creatures.\n";
+    for (const auto& spellsTemplate : creature_spells)
+    {
+        myfile << "UPDATE `creature_template` SET `spells_template`=" << spellsTemplate.first << "0 WHERE `entry`=" << spellsTemplate.first << ";\n";
+    }
+    myfile.close();
+    system("pause");
+    exit(0);
 }
 
 void ObjectMgr::LoadAllIdentifiers()

@@ -1690,6 +1690,9 @@ void World::SetInitialWorldSettings()
     sLog.outString("Restoring deleted items to players ...");
     sObjectMgr.RestoreDeletedItems();
 
+    sLog.outString("Converting AI cast actions to creature spells ...");
+    sObjectMgr.EventToSpells();
+
     sAutoTestingMgr->Load();
 
     m_broadcaster =
