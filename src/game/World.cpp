@@ -1690,8 +1690,8 @@ void World::SetInitialWorldSettings()
     sLog.outString("Restoring deleted items to players ...");
     sObjectMgr.RestoreDeletedItems();
 
-    sLog.outString("Converting AI cast actions to creature spells ...");
-    sObjectMgr.EventToSpells();
+    //sLog.outString("Converting AI cast actions to creature spells ...");
+    //sObjectMgr.EventToSpells();
 
     sAutoTestingMgr->Load();
 
@@ -1712,6 +1712,9 @@ void World::SetInitialWorldSettings()
 
     uint32 uStartInterval = WorldTimer::getMSTimeDiff(uStartTime, WorldTimer::getMSTime());
     sLog.outString("SERVER STARTUP TIME: %i minutes %i seconds", uStartInterval / 60000, (uStartInterval % 60000) / 1000);
+
+    sLog.outString("Finding zone names ...");
+    sObjectMgr.AddZoneName();
 }
 
 void World::DetectDBCLang()

@@ -54,6 +54,7 @@
 #include "HardcodedEvents.h"
 #include <fstream>
 #include <iostream>
+#include "DBCStores.h"
 
 #include <limits>
 
@@ -186,11 +187,44 @@ std::string ReplaceString(std::string subject) {
     for (int i = 0; i < subject.length(); i++)
         {
         if (subject.at(i) == 39) //'
-            subject.at(i) = ' ';
+            subject.at(i) = '}';
         }
     return subject;
 }
 
+void ObjectMgr::AddZoneName()
+{
+    std::ofstream myfile("creaturezones.sql");
+    if (!myfile.is_open())
+        return;
+
+    CreatureSpellsMap creature_spells;
+
+    Field* fields;
+    QueryResult* result = WorldDatabase.Query("SELECT id, guid, map, name FROM zonenames");
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+            uint32 creature_id = fields[0].GetUInt32();
+            uint64 guid = fields[1].GetUInt64();
+            uint32 map_id = fields[2].GetUInt32();
+            std::string name = fields[3].GetCppString();
+
+            auto creature_spawn = GetCreatureData(guid);
+            auto map = sMapMgr.FindMap(map_id);
+            uint32 zone_id = map->GetTerrain()->GetZoneId(creature_spawn->posX, creature_spawn->posY, creature_spawn->posZ);
+            if (WorldMapAreaEntry const* zone_data = sWorldMapAreaStore.LookupEntry(zone_id))
+                myfile << "UPDATE `creature_spells` SET `name`='" << zone_data->internal_name << " - " << ReplaceString(name) << "' WHERE `entry`=" << creature_id << "0;\n";
+            else
+                myfile << "-- Unable to determine zone for " << guid << "\n";
+        } while (result->NextRow());
+        delete result;
+    }
+    myfile.close();
+    printf("Done.\n");
+}
 void ObjectMgr::EventToSpells()
 {
     std::ofstream myfile("creaturespells.sql");
@@ -200,7 +234,7 @@ void ObjectMgr::EventToSpells()
     CreatureSpellsMap creature_spells;
 
     Field* fields;
-    QueryResult* result = WorldDatabase.Query("SELECT id, creature_id, event_chance, event_param1, event_param2, event_param3, event_param4, action1_param1, action1_param2, action1_param3 FROM creature_ai_scripts WHERE event_type=0 && action1_type=11 && action2_type=0 && action3_type=0 && (event_flags & 1) && creature_id NOT IN (SELECT creature_id FROM creature_ai_scripts WHERE event_inverse_phase_mask!=0) ORDER BY creature_id, id");
+    QueryResult* result = WorldDatabase.Query("SELECT id, creature_id, event_chance, event_param1, event_param2, event_param3, event_param4, action1_param1, action1_param2, action1_param3 FROM creature_ai_scripts WHERE event_type=0 && action1_type=11 && action2_type=0 && action3_type=0 && (event_flags & 1) && (creature_id NOT IN (SELECT creature_id FROM mangos.creature_ai_scripts WHERE event_inverse_phase_mask!=0)) && (creature_id IN (SELECT entry FROM mangos.creature_template WHERE AIName = 'EventAI')) ORDER BY creature_id, id");
     printf("Query done.\n");
     myfile << "-- Remove replaced AI actions.\n";
     if (result)

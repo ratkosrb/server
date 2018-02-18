@@ -555,6 +555,7 @@ class ObjectMgr
         ~ObjectMgr();
 
         void EventToSpells();
+        void AddZoneName();
 
         // Stores all existing ids in the database, not necessarily valid or loaded.
         void LoadAllIdentifiers();
