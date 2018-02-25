@@ -30,10 +30,8 @@ REPLACE INTO `creature_ai_scripts` VALUES
 UPDATE `creature_template` SET `ScriptName`='npc_oozeling_jubjub' WHERE entry in  (14867,15429,14878);
 UPDATE `creature_template` SET `gossip_menu_id`=14871, `npcflag`=1, `ScriptName`='npc_morja' WHERE `entry`=14871;
 
--- Jubjub in range condition?
--- REPLACE INTO `conditions` (`condition_entry`, `type`, `value1`) VALUES (14871, 0, 0);
-
-REPLACE INTO `gossip_menu` VALUES (14871, 7400, 0); -- ,(14871, 7401, 14871);
+REPLACE INTO `conditions` (`condition_entry`, `type`, `value1`, `value2`) VALUES (14871, 31, 147, 2);
+REPLACE INTO `gossip_menu` VALUES (14871, 7400, 0),(14871, 7401, 14871);
 REPLACE INTO `npc_text` (`ID`, `BroadcastTextID0`, `Probability0`) VALUES (7401, 10169, 1);
 UPDATE `creature` SET `modelid`=0, `spawntimesecsmin`=300, `spawntimesecsmax`=300 WHERE `guid`=54428;
 REPLACE INTO `creature` VALUES (54427, 14867, 0, 0, 0, -9549.04, 38.9258, 59.2559, 3.58223, 300, 300, 0, 0, 166, 0, 0, 0, 0, 0, 0, 10);
