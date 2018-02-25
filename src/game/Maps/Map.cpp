@@ -1156,6 +1156,16 @@ Map::PlayerRelocation(Player *player, float x, float y, float z, float orientati
 
     player->OnRelocated();
 
+
+    // Ornate Spyglass case, the player's camera is at range in front of him
+    // When the player turns, keep it in front of the player
+    if (!player->m_movementInfo.HasMovementFlag(MOVEFLAG_MASK_MOVING_OR_TURN))
+        if (player->GetLongSight())
+        {
+            player->UpdateLongSight();
+            player->GetCamera().UpdateVisibilityForOwner();
+        }
+
     NGridType* newGrid = getNGrid(new_cell.GridX(), new_cell.GridY());
     if (!same_cell && newGrid->GetGridState() != GRID_STATE_ACTIVE)
     {
@@ -2449,7 +2459,7 @@ void Map::ScriptsProcess()
         bool scriptResultOk = FindScriptTargets(source, target, step) && (step.script->command != SCRIPT_COMMAND_DISABLED);
 
         if (step.script->condition)
-            if (!sObjectMgr.IsConditionSatisfied(step.script->condition, dynamic_cast<WorldObject*>(target), this, dynamic_cast<WorldObject*>(source), CONDITION_FROM_DBSCRIPTS))
+            if (!sObjectMgr.IsConditionSatisfied(step.script->condition, ToWorldObject(target), this, ToWorldObject(source), CONDITION_FROM_DBSCRIPTS))
                 scriptResultOk = false;
 
         if (scriptResultOk)
