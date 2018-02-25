@@ -57,12 +57,12 @@ REPLACE INTO `creature_ai_scripts` VALUES
 
 DELETE FROM `event_scripts` WHERE `id`=10003;
 INSERT INTO `event_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`) VALUES 
-(10003, 0, 0, 0, 0, 0, 0, 14871, 10, 0, 1, 10170, 0, 0, 0, 0, 0, 0, 0, 'Morja - Jubjub found text'),
-(10003, 0, 4, 147, 2, 1, 0, 14871, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'Morja - Enable quest giver flag'),
+(10003, 0, 0, 0, 0, 0, 0, 14871, 50, 0, 1, 10170, 0, 0, 0, 0, 0, 0, 0, 'Morja - Jubjub found text'),
+(10003, 0, 4, 147, 2, 1, 0, 14871, 50, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'Morja - Enable quest giver flag'),
 (10003, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 10167, 0, 0, 0, 0, 0, 0, 0, 'Jubjub - Guzzle Ale emote'),
 (10003, 3, 41, 0, 0, 0, 0, 165578, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Jubjub - Remove Mug'),
-(10003, 120, 4, 147, 2, 2, 0, 14871, 10, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'Morja - Disable quest giver flag'),
-(10003, 120, 0, 0, 0, 0, 0, 14871, 10, 0, 1, 10171, 0, 0, 0, 0, 0, 0, 0, 'Morja - Jubjub gone text'),
+(10003, 119, 0, 0, 0, 0, 0, 14871, 50, 0, 1, 10171, 0, 0, 0, 0, 0, 0, 0, 'Morja - Jubjub gone text'),
+(10003, 120, 4, 147, 2, 2, 0, 14871, 50, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 'Morja - Disable quest giver flag'),
 (10003, 120, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Jubjub - Despawn');
 
 
