@@ -1509,15 +1509,6 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     }
                     return;
                 }
-                case 14823: // Dark Iron Ale despawn mug
-                {
-                    if (GameObject* pMug = unitTarget->FindNearestGameObject(165578, 1.0f))
-                    {
-                        pMug->SetLootState(GO_JUST_DEACTIVATED);
-                        pMug->AddObjectToRemoveList();
-                    }
-                    return;
-                }
                 case 23845: // Attract Jubjub
                 {
                     if (GameObject* pMug = m_caster->FindNearestGameObject(165578, 3.0f))

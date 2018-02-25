@@ -3615,112 +3615,10 @@ bool QuestRewarded_npc_kwee_peddlefeet(Player* pPlayer, Creature* pCreature, con
 
 enum
 {
-    NPC_JUBJUB = 14867,
     OBJECT_DARK_IRON_MUG = 165578,
-
-    SPELL_ATTRACT_JUBJUB = 23845,
     SPELL_DARK_IRON_MUG = 14813,
-
-    TEXT_GONE_JUBJUB = 10171,
-    TEXT_FOUND_JUBJUB = 10170,
     EMOTE_GUZZLE_ALE = 10167,
-
-    JUBJUB_MIN_TIME = 10000,
-    JUBJUB_MAX_TIME = 30000,
-    MORJA_EVENT_DURATION = 60000
 };
-
-struct npc_morjaAI : public ScriptedAI
-{
-    npc_morjaAI(Creature* pCreature) : ScriptedAI(pCreature), uiEventCount(0), uiEventTimer(0)
-    {
-        Reset();
-    }
-
-    uint32 uiEventCount;
-    uint32 uiEventTimer;
-    void Reset() { }
-
-    void SpellHit(Unit* pUnit, const SpellEntry* pSpell)
-    {
-        if (!uiEventCount && pSpell->Id == SPELL_DARK_IRON_MUG)
-        {
-            if (GameObject* pMug = m_creature->FindNearestGameObject(OBJECT_DARK_IRON_MUG, 3.0f))
-            {
-                uiEventCount = 1;
-                uiEventTimer = urand(JUBJUB_MIN_TIME, JUBJUB_MAX_TIME);
-            }
-        }
-    }
-
-    void MoveInLineOfSight(Unit* pWho) override
-    {
-        if (!pWho)
-            return;
-
-        if (uiEventCount == 2 && m_creature->GetDistance(pWho) < 3.0f && pWho->GetEntry() == NPC_JUBJUB)
-        {
-            m_creature->MonsterSay(TEXT_FOUND_JUBJUB);
-            m_creature->SetFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
-            uiEventTimer = MORJA_EVENT_DURATION;
-            uiEventCount = 3;
-        }
-    }
-
-    void UpdateAI(const uint32 uiDiff)
-    {
-        switch (uiEventCount)
-        {
-        case 1:
-            if (uiEventTimer < uiDiff)
-            {
-                if (Creature* pJubjub = m_creature->FindNearestCreature(NPC_JUBJUB, 50.0f))
-                {
-                    m_creature->CastSpell(m_creature, SPELL_ATTRACT_JUBJUB, true);
-                    uiEventTimer = 20000;
-                    uiEventCount = 2;
-                }
-                else
-                {
-                    uiEventCount = 0;
-                    uiEventTimer = 0;
-                }
-            }
-            else
-                uiEventTimer -= uiDiff;
-            break;
-        case 2:
-            if (uiEventTimer < uiDiff)
-            {
-                uiEventCount = 0;
-                uiEventTimer = 0;
-            }
-            else
-                uiEventTimer -= uiDiff;
-            break;
-        case 3:
-            if (uiEventTimer < uiDiff)
-            {
-                uiEventCount = 0;
-                uiEventTimer = 0;
-                if (Creature* pJubjub = m_creature->FindNearestCreature(NPC_JUBJUB, 4.0f))
-                {
-                    m_creature->MonsterSay(TEXT_GONE_JUBJUB);
-                    m_creature->RemoveFlag(UNIT_NPC_FLAGS, UNIT_NPC_FLAG_QUESTGIVER);
-                    pJubjub->DespawnOrUnsummon();
-                }
-            }
-            else
-                uiEventTimer -= uiDiff;
-            break;
-        }
-    }
-};
-
-CreatureAI* GetAI_npc_morja(Creature* pCreature)
-{
-    return new npc_morjaAI(pCreature);
-}
 
 struct npc_oozeling_jubjubAI : public ScriptedPetAI
 {
@@ -3963,10 +3861,5 @@ void AddSC_npcs_special()
     newscript = new Script;
     newscript->Name = "npc_oozeling_jubjub";
     newscript->GetAI = &GetAI_npc_oozeling_jubjub;
-    newscript->RegisterSelf();
-
-    newscript = new Script;
-    newscript->Name = "npc_morja";
-    newscript->GetAI = &GetAI_npc_morja;
     newscript->RegisterSelf();
 }
