@@ -1197,3 +1197,26 @@ bool Map::ScriptCommand_RemoveItem(ScriptAction& step, Object* source, Object* t
 
     return false;
 }
+
+// SCRIPT_COMMAND_REMOVE_OBJECT (41)
+bool Map::ScriptCommand_RemoveGameObject(ScriptAction& step, Object* source, Object* target)
+{
+    Unit* pUser = nullptr;
+    GameObject *pGo = nullptr;
+
+    if (!((pUser = ToUnit(source)) || (pUser = ToUnit(target))))
+    {
+        sLog.outError("SCRIPT_COMMAND_REMOVE_OBJECT (script id %u) call for a NULL user, skipping.", step.script->id);
+        return ShouldAbortScript(step);
+    }
+
+    if (!((pGo = ToGameObject(target)) || (pGo = ToGameObject(source))))
+    {
+        sLog.outError("SCRIPT_COMMAND_REMOVE_OBJECT (script id %u) call for a NULL gameobject, skipping.", step.script->id);
+        return ShouldAbortScript(step);
+    }
+
+    pGo->SetLootState(GO_JUST_DEACTIVATED);
+    pGo->AddObjectToRemoveList();
+    return false;
+}
