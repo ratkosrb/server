@@ -60,12 +60,12 @@ enum ConditionType
     CONDITION_ACTIVE_HOLIDAY        = 26,                   // holiday_id   0       preferred use instead CONDITION_ACTIVE_GAME_EVENT when possible
     CONDITION_TARGET_GENDER         = 27,                   // 0=male, 1=female, 2=none (see enum Gender)
     CONDITION_LEARNABLE_ABILITY     = 28,                   // spell_id     0 or item_id
-    // True when player can learn ability (using min skill value from SkillLineAbility).
-    // Item_id can be defined in addition, to check if player has one (1) item in inventory or bank.
-    // When player has spell or has item (when defined), condition return false.
+                                                            // True when player can learn ability (using min skill value from SkillLineAbility).
+                                                            // Item_id can be defined in addition, to check if player has one (1) item in inventory or bank.
+                                                            // When player has spell or has item (when defined), condition return false.
     CONDITION_SKILL_BELOW           = 29,                   // skill_id     skill_value
-    // True if player has skill skill_id and skill less than (and not equal) skill_value (for skill_value > 1)
-    // If skill_value == 1, then true if player has not skill skill_id
+                                                            // True if player has skill skill_id and skill less than (and not equal) skill_value (for skill_value > 1)
+                                                            // If skill_value == 1, then true if player has not skill skill_id
     CONDITION_REPUTATION_RANK_MAX   = 30,                   // faction_id   max_rank
     CONDITION_HAS_FLAG              = 31,                   // field_id     flag
     CONDITION_LAST_WAYPOINT         = 32,                   // waypointId   0 = exact, 1: wp <= waypointId, 2: wp > waypointId  Use to check what waypoint was last reached  
@@ -112,16 +112,16 @@ class ConditionEntry
 {
     public:
         // Default constructor, required for SQL Storage (Will give errors if used elsewise)
-        ConditionEntry() : m_entry(0), m_condition(CONDITION_AND), m_value1(0), m_value2(0) {}
+        ConditionEntry() : m_entry(0), m_condition(CONDITION_AND), m_value1(0), m_value2(0), m_flags(0) {}
 
-        ConditionEntry(uint16 _entry, int16 _condition, uint32 _value1, uint32 _value2)
-            : m_entry(_entry), m_condition(ConditionType(_condition)), m_value1(_value1), m_value2(_value2) {}
+        ConditionEntry(uint16 _entry, int16 _condition, uint32 _value1, uint32 _value2, uint8 _flags)
+            : m_entry(_entry), m_condition(ConditionType(_condition)), m_value1(_value1), m_value2(_value2), m_flags(_flags) {}
 
         // Checks correctness of values
         bool IsValid();
         static bool CanBeUsedWithoutPlayer(uint16 entry);
 
-        // Checks if the player meets the condition
+        // Checks if the condition is met
         bool Meets(WorldObject const* target, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
 
         Team GetTeam() const
@@ -129,7 +129,8 @@ class ConditionEntry
             return m_condition == CONDITION_TEAM ? Team(m_value1) : TEAM_CROSSFACTION;
         }
     private:
-        bool CheckParamRequirements(WorldObject const* target, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
+        bool CheckParamRequirements(WorldObject const* target, Map const* map, WorldObject const* source) const;
+        bool inline Evaluate(WorldObject const* target, Map const* map, WorldObject const* source, ConditionSource conditionSourceType) const;
         uint16 m_entry;                                     // entry of the condition
         ConditionType m_condition;                          // additional condition type
         uint32 m_value1;                                    // data for the condition - see ConditionType definition
