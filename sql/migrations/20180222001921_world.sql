@@ -29,7 +29,7 @@ UPDATE creature_template SET faction_A=1618, faction_H=1618 WHERE entry IN
 
 -- Morin Cloudstalker waypoints, 10 and 16 were swapped
 DELETE FROM `creature_movement` WHERE `id`='26577';
-INSERT INTO `creature_movement` VALUES
+INSERT INTO `creature_movement` (`id`, `point`, `position_x`, `position_y`, `position_z`, `waittime`, `script_id`, `textid1`, `textid2`, `textid3`, `textid4`, `textid5`, `emote`, `spell`, `wpguid`, `orientation`, `model1`, `model2`) VALUES
 ('26577', '1', '-2313.7', '-619.384', '-9.41743', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '4.13614', '0', '0'),
 ('26577', '2', '-2333.6', '-663.124', '-9.42088', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '4.28537', '0', '0'),
 ('26577', '3', '-2343.46', '-717.397', '-9.42378', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '4.53277', '0', '0'),
@@ -51,7 +51,7 @@ INSERT INTO `creature_movement` VALUES
 UPDATE `quest_template` SET `OfferRewardText`='Hmmm, Narm sent you to me, did he?$B$BWell then, Narm could always be trusted, so that must mean you\'re ready to take part of the next sapta--the sapta of fire.$B$BI see it in your eyes already, the burning, the desire. You\'ve tasted power, and now you\'re ready for more of it. Patience, $N. Remember what earth taught you. Power and destruction will come easily, but you must still know when to stay your hand.' WHERE `entry`='2984';
 
 -- Razormane Wolf doesn't act like a pet, because he should be summoned by a spell
-INSERT INTO creature_ai_scripts VALUES
+INSERT INTO creature_ai_scripts (`id`, `creature_id`, `event_type`, `event_inverse_phase_mask`, `event_chance`, `event_flags`, `event_param1`, `event_param2`, `event_param3`, `event_param4`, `action1_type`, `action1_param1`, `action1_param2`, `action1_param3`, `action2_type`, `action2_param1`, `action2_param2`, `action2_param3`, `action3_type`, `action3_param1`, `action3_param2`, `action3_param3`, `comment`) VALUES
 ('326510', '3265', '1', '0', '100', '0', '1000', '1000', '0', '0', '11', '6479', '0', '1', '0', '0', '0', '0', '0', '0', '0', '0', 'Razormane Hunter - Summon Razormane Wolf on Spawn');
 -- Delete Razormane Wolves
 DELETE FROM `creature` WHERE `guid`='14332';
