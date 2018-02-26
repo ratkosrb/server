@@ -39,7 +39,7 @@ REPLACE INTO `spell_script_target` (`entry`, `type`, `targetEntry`) VALUES (2384
 UPDATE `quest_template` SET `RewSpellCast`=23852 WHERE `entry`=7946;
 
 REPLACE INTO `creature_ai_scripts` VALUES 
-(955405, 14871, 0, 8, 0, 100, 1, 14813, -1, 120000, 120000, 50, 10002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Morja - Start event on Dark Iron Ale hit');
+(1487101, 14871, 0, 8, 0, 100, 1, 14813, -1, 120000, 120000, 50, 10002, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Morja - Start event on Dark Iron Ale hit');
 
 DELETE FROM `event_scripts` WHERE `id`=10002;
 INSERT INTO `event_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`) VALUES 
@@ -53,7 +53,7 @@ REPLACE INTO `creature` VALUES (54427, 14867, 0, 0, 0, -9549.04, 38.9258, 59.255
 REPLACE INTO `game_event_creature` (`guid`, `event`) VALUES (54427, 4);
 
 REPLACE INTO `creature_ai_scripts` VALUES 
-(955406, 14867, 0, 29, 0, 100, 1, 8, 1, 120000, 120000, 50, 10003, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Jubjub - Start event when reaching Dark Iron ale');
+(1486701, 14867, 0, 29, 0, 100, 1, 8, 1, 120000, 120000, 50, 10003, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Jubjub - Start event when reaching Dark Iron ale');
 
 DELETE FROM `event_scripts` WHERE `id`=10003;
 INSERT INTO `event_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `comments`) VALUES 
