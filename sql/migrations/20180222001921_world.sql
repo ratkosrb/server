@@ -63,6 +63,15 @@ DELETE FROM `creature` WHERE `guid`='14327';
 DELETE FROM `creature` WHERE `guid`='14326';
 DELETE FROM `creature` WHERE `guid`='14325';
 DELETE FROM `creature` WHERE `guid`='14324';
+DELETE FROM `creature_addon` WHERE `guid`=14324;
+DELETE FROM `creature_addon` WHERE `guid`=14325;
+DELETE FROM `creature_addon` WHERE `guid`=14326;
+DELETE FROM `creature_addon` WHERE `guid`=14327;
+DELETE FROM `creature_addon` WHERE `guid`=14328;
+DELETE FROM `creature_addon` WHERE `guid`=14329;
+DELETE FROM `creature_addon` WHERE `guid`=14330;
+DELETE FROM `creature_addon` WHERE `guid`=14331;
+DELETE FROM `creature_addon` WHERE `guid`=14332;
 
 -- Undermap creatures
 UPDATE `creature` SET `position_z`='101.4' WHERE `guid`='13447';
