@@ -1498,7 +1498,7 @@ void npc_taelanAI::DoAttack(const uint32 uiDiff)
 void npc_taelanAI::DoHeal(const uint32 uiDiff)
 {
     // heals himself or friendly creatures around
-    if (auto pHealMe = DoSelectLowestHpFriendly(40.0f, 40, true))
+    if (auto pHealMe = m_creature->DoSelectLowestHpFriendly(40.0f, 40, true))
     {
         if (pHealMe->GetHealthPercent() < 20.0f)
         {

@@ -395,7 +395,7 @@ bool Map::ScriptCommand_SummonCreature(ScriptAction& step, Object* source, Objec
     }
 
     Creature* pCreature = pSummoner->SummonCreature(step.script->summonCreature.creatureEntry, x, y, z, orientation,
-        TEMPSUMMON_TIMED_OR_DEAD_DESPAWN, step.script->summonCreature.despawnDelay, step.script->summonCreature.flags & SF_SUMMONCREATURE_ACTIVE);
+        TempSummonType(step.script->summonCreature.despawnType), step.script->summonCreature.despawnDelay, step.script->summonCreature.flags & SF_SUMMONCREATURE_ACTIVE);
 
     if (!pCreature)
     {
@@ -403,8 +403,28 @@ bool Map::ScriptCommand_SummonCreature(ScriptAction& step, Object* source, Objec
         return ShouldAbortScript(step);
     }
 
-    if (step.script->summonCreature.setRun == 1)
+    if (step.script->summonCreature.flags & SF_SUMMONCREATUR_SET_RUN)
         pCreature->SetWalk(false);
+
+    switch (step.script->summonCreature.attackTarget)
+    {
+        case TARGET_T_SELF:
+            break;
+        case TARGET_T_PROVIDED_TARGET:
+        {
+            if (Unit* pAttackTarget = ToUnit(target))
+                pCreature->AI()->AttackStart(pAttackTarget);
+            break;
+        }
+        default:
+        {
+            if (Creature* pCreatureSummoner = pSummoner->ToCreature())
+            {
+                if (Unit* pAttackTarget = GetTargetByType(pCreatureSummoner, step.script->summonCreature.attackTarget, nullptr))
+                    pCreature->AI()->AttackStart(pAttackTarget);
+            }
+        }
+    }
 
     return false;
 }
@@ -545,11 +565,13 @@ bool Map::ScriptCommand_CastSpell(ScriptAction& step, Object* source, Object* ta
         return ShouldAbortScript(step);
     }
 
-    if ((step.script->castSpell.flags & SF_CASTSPELL_INTERRUPT_PREVIOUS) && pUnitSource->IsNonMeleeSpellCasted(false))
+    if ((step.script->castSpell.flags & CAST_INTERRUPT_PREVIOUS) && pUnitSource->IsNonMeleeSpellCasted(false))
         pUnitSource->InterruptNonMeleeSpells(false);
 
-    //TODO: when GO cast implemented, code below must be updated accordingly to also allow GO spell cast
-    pUnitSource->CastSpell(pUnitTarget, step.script->castSpell.spellId, (step.script->castSpell.flags & SF_CASTSPELL_TRIGGERED) != 0);
+    if (Creature* pCreatureSource = pUnitSource->ToCreature())
+        pCreatureSource->AI()->DoCastSpellIfCan(GetTargetByType(pCreatureSource, step.script->castSpell.target, pUnitTarget, step.script->castSpell.spellId), step.script->castSpell.spellId, step.script->castSpell.flags);
+    else
+        pUnitSource->CastSpell(pUnitTarget, step.script->castSpell.spellId, (step.script->castSpell.flags & CAST_TRIGGERED) != 0);
 
     return false;
 }
@@ -891,28 +913,17 @@ bool Map::ScriptCommand_ModifyThreat(ScriptAction& step, Object* source, Object*
         return ShouldAbortScript(step);
     }
 
-    switch (step.script->modThreat.target)
+    if (step.script->modThreat.target == SO_MODIFYTHREAT_ALL_ATTACKERS)
     {
-        case SO_MODIFYTHREAT_PROVIDED_TARGET:
-        {
-            if (target && target->isType(TYPEMASK_UNIT))
-                pSource->getThreatManager().modifyThreatPercent(static_cast<Unit*>(target), step.script->x);
-            break;
-        }
-        case SO_MODIFYTHREAT_CURRENT_VICTIM:
-        {
-            if (Unit* pVictim = pSource->getVictim())
-                pSource->getThreatManager().modifyThreatPercent(pVictim, step.script->x);
-            break;
-        }
-        case SO_MODIFYTHREAT_ALL_ATTACKERS:
-        {
-            ThreatList const& threatList = pSource->getThreatManager().getThreatList();
-            for (ThreatList::const_iterator i = threatList.begin(); i != threatList.end(); ++i)
-                if (Unit* Temp = pSource->GetMap()->GetUnit((*i)->getUnitGuid()))
-                    pSource->getThreatManager().modifyThreatPercent(Temp, step.script->x);
-            break;
-        }
+        ThreatList const& threatList = pSource->getThreatManager().getThreatList();
+        for (ThreatList::const_iterator i = threatList.begin(); i != threatList.end(); ++i)
+            if (Unit* Temp = pSource->GetMap()->GetUnit((*i)->getUnitGuid()))
+                pSource->getThreatManager().modifyThreatPercent(Temp, step.script->x);
+    }
+    else
+    {
+        if (Unit* pTarget = GetTargetByType(pSource, step.script->modThreat.target, ToUnit(target)))
+            pSource->getThreatManager().modifyThreatPercent(pTarget, step.script->x);
     }
 
     return false;
@@ -1211,5 +1222,35 @@ bool Map::ScriptCommand_RemoveGameObject(ScriptAction& step, Object* source, Obj
 
     pGo->SetLootState(GO_JUST_DEACTIVATED);
     pGo->AddObjectToRemoveList();
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_MELEE_ATTACK (42)
+bool Map::ScriptCommand_SetMeleeAttack(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_MELEE_ATTACK (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    pSource->AI()->SetMeleeAttack(step.script->enableMelee.enabled);
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_COMBAT_MOVEMENT (43)
+bool Map::ScriptCommand_SetCombatMovement(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_COMBAT_MOVEMENT (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    pSource->AI()->SetCombatMovement(step.script->combatMovement.enabled);
     return false;
 }

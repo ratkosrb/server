@@ -82,6 +82,9 @@ CanCastResult CreatureAI::CanCastSpell(Unit* pTarget, const SpellEntry *pSpell, 
     if (pSpell->rangeIndex == SPELL_RANGE_IDX_SELF_ONLY)
         return CAST_OK;
 
+    if (!(pSpell->AttributesEx2 & SPELL_ATTR_EX2_IGNORE_LOS) && !m_creature->IsWithinLOSInMap(pTarget))
+        return CAST_FAIL_NOT_IN_LOS;
+
     if (const SpellRangeEntry *pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex))
     {
         if (pTarget != m_creature)
@@ -139,6 +142,9 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
             if ((uiCastFlags & CAST_INTERRUPT_PREVIOUS) && pCaster->IsNonMeleeSpellCasted(false))
                 pCaster->InterruptNonMeleeSpells(false);
 
+            if ((uiCastFlags & CAST_MAIN_RANGED_SPELL) && pCaster->IsMoving())
+                pCaster->StopMoving();
+
             pCaster->CastSpell(pTarget, pSpell, uiCastFlags & CAST_TRIGGERED, nullptr, nullptr, uiOriginalCasterGUID);
             return CAST_OK;
         }
@@ -148,55 +154,6 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
     }
 
     return CAST_FAIL_IS_CASTING;
-}
-
-
-Unit* CreatureAI::DoSelectLowestHpFriendly(float fRange, uint32 uiMinHPDiff, bool bPercent) const
-{
-    Unit* pUnit = nullptr;
-
-    MaNGOS::MostHPMissingInRangeCheck u_check(m_creature, fRange, uiMinHPDiff, bPercent);
-    MaNGOS::UnitLastSearcher<MaNGOS::MostHPMissingInRangeCheck> searcher(pUnit, u_check);
-
-    Cell::VisitGridObjects(m_creature, searcher, fRange);
-
-    return pUnit;
-}
-
-inline Unit* CreatureAI::GetTargetByType(uint32 CastTarget, uint16 SpellId) const
-{
-    switch (CastTarget)
-    {
-        case TARGET_T_SELF:
-            return m_creature;
-        case TARGET_T_HOSTILE:
-            return m_creature->getVictim();
-        case TARGET_T_HOSTILE_SECOND_AGGRO:
-            return m_creature->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 1);
-        case TARGET_T_HOSTILE_LAST_AGGRO:
-            return m_creature->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO, 0);
-        case TARGET_T_HOSTILE_RANDOM:
-            return m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-        case TARGET_T_HOSTILE_RANDOM_NOT_TOP:
-            return m_creature->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
-        case TARGET_T_FRIENDLY:
-        case TARGET_T_FRIENDLY_NOT_SELF:
-        case TARGET_T_FRIENDLY_INJURED:
-        {
-            const SpellEntry* pSpell = sSpellMgr.GetSpellEntry(SpellId);
-            const SpellRangeEntry *pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex);
-            switch (CastTarget)
-            {
-                case TARGET_T_FRIENDLY:
-                    return m_creature->SelectRandomFriendlyTarget(nullptr, pSpellRange->maxRange);
-                case TARGET_T_FRIENDLY_NOT_SELF:
-                    return m_creature->SelectRandomFriendlyTarget(m_creature, pSpellRange->maxRange);
-                case TARGET_T_FRIENDLY_INJURED:
-                    return DoSelectLowestHpFriendly(pSpellRange->maxRange, 50, true);
-            }
-        }
-    }
-    return nullptr;
 }
 
 void CreatureAI::SetSpellsTemplate(uint32 entry)
@@ -232,19 +189,31 @@ void CreatureAI::DoSpellTemplateCasts(const uint32 uiDiff)
                 continue;
             }
 
-            Unit* spellTarget = GetTargetByType(spell.castTarget, spell.spellId);
+            Unit* spellTarget = GetTargetByType(m_creature, spell.castTarget, nullptr, spell.spellId);
 
-            // no valid target
-            if (!spellTarget)
-                continue;
-
-            if (DoCastSpellIfCan(spellTarget, spell.spellId, spell.castFlags) == CAST_OK)
+            CanCastResult result = DoCastSpellIfCan(spellTarget, spell.spellId, spell.castFlags);
+            
+            if (result == CAST_OK)
             {
                 spell.cooldown = urand(spell.delayRepeatMin, spell.delayRepeatMax);
+
+                if (spell.castFlags & CAST_MAIN_RANGED_SPELL)
+                {
+                    SetCombatMovement(false);
+                    SetMeleeAttack(false);
+                }
 
                 // If there is a script for this spell, run it.
                 if (spell.scriptId)
                     m_creature->GetMap()->ScriptsStart(sCreatureSpellScripts, spell.scriptId, m_creature, spellTarget);
+            }
+            else if (result != CAST_FAIL_IS_CASTING)
+            {
+                if (spell.castFlags & CAST_MAIN_RANGED_SPELL)
+                {
+                    SetCombatMovement(true);
+                    SetMeleeAttack(true);
+                }
             }
         }
         else
@@ -349,7 +318,7 @@ void CreatureAI::DoCastAOE(uint32 spellId, bool triggered)
 
 bool CreatureAI::DoMeleeAttackIfReady()
 {
-    return m_creature->UpdateMeleeAttackingState();
+    return m_MeleeEnabled ? m_creature->UpdateMeleeAttackingState() : false;
 }
 
 struct EnterEvadeModeHelper
@@ -370,6 +339,35 @@ struct EnterEvadeModeHelper
     }
     Unit* source;
 };
+
+void CreatureAI::SetMeleeAttack(bool enabled)
+{
+    if (m_MeleeEnabled == enabled)
+        return;
+
+    m_MeleeEnabled = enabled;
+
+    if (enabled)
+        m_creature->SendMeleeAttackStart(m_creature->getVictim());
+    else
+        m_creature->SendMeleeAttackStop(m_creature->getVictim());
+}
+
+void CreatureAI::SetCombatMovement(bool enabled)
+{
+    if (m_CombatMovementEnabled == enabled)
+        return;
+
+    m_CombatMovementEnabled = enabled;
+
+    if (Unit* pVictim = m_creature->getVictim())
+    {
+        if (!enabled && (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE))
+            m_creature->GetMotionMaster()->MoveIdle();
+        else if (enabled && (m_creature->GetMotionMaster()->GetCurrentMovementGeneratorType() == IDLE_MOTION_TYPE))
+            m_creature->GetMotionMaster()->MoveChase(pVictim);
+    }
+}
 
 void CreatureAI::EnterEvadeMode()
 {

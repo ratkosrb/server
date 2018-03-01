@@ -25,22 +25,19 @@
 #include "ObjectGuid.h"
 #include "DBCEnums.h"
 #include "ace/Atomic_Op.h"
+#include "SpellMgr.h"
+#include "Creature.h"
 
 struct AreaTriggerEntry;
 class Aura;
-class Creature;
 class CreatureAI;
 class GameObject;
 class GameObjectAI;
 class InstanceData;
 class Item;
 class Map;
-class Object;
-class Player;
 class Quest;
 class SpellCastTargets;
-class Unit;
-class WorldObject;
 
 // Legend:
 // source - the type of object which executes the command
@@ -99,9 +96,10 @@ enum eScriptCommand
                                                             // datalong2 = despawn_delay
                                                             // datalong3 = unique_limit
                                                             // datalong4 = unique_distance
-                                                            // data_flags = eSummonCreatureFlags
-                                                            // dataint = (bool) setRun; 0 = off (default), 1 = on
+                                                            // dataint = eSummonCreatureFlags
                                                             // dataint2 = eSummonCreatureFacingOptions
+                                                            // dataint3 = attack_target (see enum Target)
+                                                            // dataint4 = despawn_type (see enum TempSummonType)
                                                             // x/y/z/o = coordinates
     SCRIPT_COMMAND_OPEN_DOOR                = 11,           // source = GameObject (from datalong, provided source or target)
                                                             // If provided target is BUTTON GameObject, command is run on it too.
@@ -119,6 +117,7 @@ enum eScriptCommand
                                                             // target = Unit
                                                             // datalong = spell_id
                                                             // datalong2 = eCastSpellFlags
+                                                            // datalong3 = target
     SCRIPT_COMMAND_PLAY_SOUND               = 16,           // source = WorldObject
                                                             // target = Player/None
                                                             // datalong = sound_id
@@ -198,6 +197,10 @@ enum eScriptCommand
                                                             // datalong2 = amount
     SCRIPT_COMMAND_REMOVE_OBJECT            = 41,           // source = GameObject
                                                             // target = Unit
+    SCRIPT_COMMAND_SET_MELEE_ATTACK         = 42,           // source = Creature
+                                                            // datalong = (bool) 0 = off, 1 = on
+    SCRIPT_COMMAND_SET_COMBAT_MOVEMENT      = 43,           // source = Creature
+                                                            // datalong = (bool) 0 = off, 1 = on
     SCRIPT_COMMAND_MAX,
 
     SCRIPT_COMMAND_DISABLED                 = 9999          // Script action was disabled during loading.
@@ -235,9 +238,10 @@ enum eModifyFlagsOptions
 // Must start from 0x8 because of target selection flags.
 enum eSummonCreatureFlags
 {
-    SF_SUMMONCREATURE_ACTIVE      = 0x10,                     // active creatures are always updated
-    SF_SUMMONCREATURE_UNIQUE      = 0x20,                     // not actually unique, just checks for same entry in certain range
-    SF_SUMMONCREATURE_UNIQUE_TEMP = 0x40                      // same as 0x10 but check for TempSummon only creatures
+    SF_SUMMONCREATUR_SET_RUN      = 0x1,                         // makes creature move at run speed
+    SF_SUMMONCREATURE_ACTIVE      = 0x2,                         // active creatures are always updated
+    SF_SUMMONCREATURE_UNIQUE      = 0x4,                         // not actually unique, just checks for same entry in certain range
+    SF_SUMMONCREATURE_UNIQUE_TEMP = 0x8                          // same as 0x10 but check for TempSummon only creatures
 };
 
 // Possible dataint2 values for SCRIPT_COMMAND_TEMP_SUMMON_CREATURE
@@ -245,13 +249,6 @@ enum eSummonCreatureFacingOptions
 {
     SO_SUMMONCREATURE_FACE_SUMMONER = 1,                         // Creature will face the summoner.
     SO_SUMMONCREATURE_FACE_TARGET   = 2                          // Creature will face the provided target object.
-};
-
-// Flags used by SCRIPT_COMMAND_CAST_SPELL
-enum eCastSpellFlags
-{
-    SF_CASTSPELL_TRIGGERED          = 0x1,                    // Triggered spells skip checks.
-    SF_CASTSPELL_INTERRUPT_PREVIOUS = 0x2                     // Will interrupt the current spell cast.
 };
 
 // Flags used by SCRIPT_COMMAND_PLAY_SOUND
@@ -264,11 +261,8 @@ enum ePlaySoundFlags
 // Possible datalong values for SCRIPT_COMMAND_MODIFY_THREAT
 enum eModifyThreatTargets
 {
-    SO_MODIFYTHREAT_PROVIDED_TARGET = 0,
-    SO_MODIFYTHREAT_CURRENT_VICTIM  = 1,
-    SO_MODIFYTHREAT_ALL_ATTACKERS   = 2,
-
-    SO_MODIFYTHREAT_MAX_TARGETS
+    // 0 to 5 from Target enum.
+    SO_MODIFYTHREAT_ALL_ATTACKERS   = 6
 };
 
 // Possible datalong3 values for SCRIPT_COMMAND_TERMINATE_SCRIPT
@@ -415,9 +409,11 @@ struct ScriptInfo
             uint32 despawnDelay;                            // datalong2
             uint32 uniqueLimit;                             // datalong3
             uint32 uniqueDistance;                          // datalong4
-            uint32 flags;                                   // data_flags
-            int32 setRun;                                   // dataint
+            uint32 unused;                                  // data_flags
+            int32 flags;                                    // dataint
             int32 facingLogic;                              // dataint2
+            int32 attackTarget;                             // dataint3
+            int32 despawnType;                              // dataint4
         } summonCreature;
 
         struct                                              // SCRIPT_COMMAND_OPEN_DOOR (11)
@@ -443,6 +439,7 @@ struct ScriptInfo
         {
             uint32 spellId;                                 // datalong
             uint32 flags;                                   // datalong2
+            uint32 target;                                  // datalong3
         } castSpell;
 
         struct                                              // SCRIPT_COMMAND_PLAY_SOUND (16)
@@ -590,6 +587,16 @@ struct ScriptInfo
 
                                                             // SCRIPT_COMMAND_REMOVE_OBJECT (41)
 
+        struct                                              // SCRIPT_COMMAND_SET_MELEE_ATTACK (42)
+        {
+            uint32 enabled;                                 // datalong
+        } enableMelee;
+
+        struct                                              // SCRIPT_COMMAND_SET_COMBAT_MOVEMENT (43)
+        {
+            uint32 enabled;                                 // datalong
+        } combatMovement;
+
         struct
         {
             uint32 data[9];
@@ -662,6 +669,39 @@ extern ScriptMapMap sCreatureMovementScripts;
 
 #define TEXT_SOURCE_CUSTOM_START    TEXT_SOURCE_RANGE*2
 #define TEXT_SOURCE_CUSTOM_END      TEXT_SOURCE_RANGE*3 + 1
+
+enum CastFlags
+{
+    CAST_INTERRUPT_PREVIOUS     = 0x01,                     //Interrupt any spell casting
+    CAST_TRIGGERED              = 0x02,                     //Triggered (this makes spell cost zero mana and have no cast time)
+    CAST_FORCE_CAST             = 0x04,                     //Forces cast even if creature is out of mana or out of range
+    CAST_MAIN_RANGED_SPELL      = 0x08,                     //To be used by ranged mobs only. Creature will not attempt to move until cast fails.
+    CAST_FORCE_TARGET_SELF      = 0x10,                     //Forces the target to cast this spell on itself
+    CAST_AURA_NOT_PRESENT       = 0x20,                     //Only casts the spell if the target does not have an aura from the spell
+};
+
+enum Target
+{
+    //Self (m_creature)
+    TARGET_T_PROVIDED_TARGET = 0,                           //Unit that was provided to the command
+
+    //Hostile targets (if pet then returns pet owner)
+    TARGET_T_HOSTILE,                                       //Our current target (ie: highest aggro)
+    TARGET_T_HOSTILE_SECOND_AGGRO,                          //Second highest aggro (generaly used for cleaves and some special attacks)
+    TARGET_T_HOSTILE_LAST_AGGRO,                            //Dead last on aggro (no idea what this could be used for)
+    TARGET_T_HOSTILE_RANDOM,                                //Just any random target on our threat list
+    TARGET_T_HOSTILE_RANDOM_NOT_TOP,                        //Any random target except top threat
+
+    //Invoker targets (if pet then returns pet owner)
+    TARGET_T_SELF,                                          //Self cast
+
+    //Friendly targets
+    TARGET_T_FRIENDLY,                                      //Random friendly unit.
+    TARGET_T_FRIENDLY_NOT_SELF,                             //Random friendly unit but not self.
+    TARGET_T_FRIENDLY_INJURED,                              //Friendly unit missing the most health.
+
+    TARGET_T_END
+};
 
 //Spell targets used by SelectSpell
 enum SelectTarget
@@ -926,9 +966,48 @@ class ScriptMgr
         ACE_Atomic_Op<ACE_Thread_Mutex, int> m_scheduledScripts;
 };
 
-//Generic scripting text function
+//Generic scripting functions
 void DoScriptText(int32 textEntry, WorldObject* pSource, Unit* target = nullptr, uint32 chatTypeOverride = 0);
 void DoOrSimulateScriptTextForMap(int32 iTextEntry, uint32 uiCreatureEntry, Map* pMap, Creature* pCreatureSource = nullptr, Unit* pTarget = nullptr);
+
+// Returns a target based on the type specified.
+inline Unit* GetTargetByType(Creature* pCaster, uint32 CastTarget, Unit* pTarget, uint16 SpellId = 0u)
+{
+    switch (CastTarget)
+    {
+        case TARGET_T_PROVIDED_TARGET:
+            return pTarget;
+        case TARGET_T_HOSTILE:
+            return pCaster->getVictim();
+        case TARGET_T_HOSTILE_SECOND_AGGRO:
+            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 1);
+        case TARGET_T_HOSTILE_LAST_AGGRO:
+            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO, 0);
+        case TARGET_T_HOSTILE_RANDOM:
+            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+        case TARGET_T_HOSTILE_RANDOM_NOT_TOP:
+            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
+        case TARGET_T_SELF:
+            return pCaster;
+        case TARGET_T_FRIENDLY:
+        case TARGET_T_FRIENDLY_NOT_SELF:
+        case TARGET_T_FRIENDLY_INJURED:
+        {
+            const SpellEntry* pSpell = sSpellMgr.GetSpellEntry(SpellId);
+            const SpellRangeEntry *pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex);
+            switch (CastTarget)
+            {
+                case TARGET_T_FRIENDLY:
+                    return pCaster->SelectRandomFriendlyTarget(nullptr, pSpellRange->maxRange);
+                case TARGET_T_FRIENDLY_NOT_SELF:
+                    return pCaster->SelectRandomFriendlyTarget(pCaster, pSpellRange->maxRange);
+                case TARGET_T_FRIENDLY_INJURED:
+                    return pCaster->DoSelectLowestHpFriendly(pSpellRange->maxRange, 50, true);
+            }
+        }
+    }
+    return nullptr;
+}
 
 #define sScriptMgr MaNGOS::Singleton<ScriptMgr>::Instance()
 

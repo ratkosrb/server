@@ -65,6 +65,7 @@ void ScriptMgr::DisableScriptAction(ScriptInfo& script)
 {
     script.command = SCRIPT_COMMAND_DISABLED;
     script.buddy_id = 0;
+    script.condition = 0;
 }
 
 void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
@@ -674,7 +675,7 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
             }
             case SCRIPT_COMMAND_MODIFY_THREAT:
             {
-                if (tmp.modThreat.target >= SO_MODIFYTHREAT_MAX_TARGETS)
+                if (tmp.modThreat.target > SO_MODIFYTHREAT_ALL_ATTACKERS)
                 {
                     sLog.outErrorDb("Table `%s` has invalid target type (datalong = %u) in SCRIPT_COMMAND_MODIFY_THREAT for script id %u", tablename, tmp.modThreat.target, tmp.id);
                     continue;

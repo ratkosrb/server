@@ -626,13 +626,14 @@ class MANGOS_DLL_SPEC CreatureEventAI : public CreatureAI
         void ProcessAction(CreatureEventAI_Action const& action, uint32 rnd, uint32 EventId, Unit* pActionInvoker);
         inline uint32 GetRandActionParam(uint32 rnd, uint32 param1, uint32 param2, uint32 param3);
         inline int32 GetRandActionParam(uint32 rnd, int32 param1, int32 param2, int32 param3);
-        inline Unit* GetTargetByType(uint32 Target, Unit* pActionInvoker) const;
 
         bool SpawnedEventConditionsCheck(CreatureEventAI_Event const& event);
 
         Unit* DoSelectLowestHpFriendly(float range, uint32 MinHPDiff);
         void DoFindFriendlyMissingBuff(std::list<Creature*>& _list, float range, uint32 spellid);
         void DoFindFriendlyCC(std::list<Creature*>& _list, float range);
+
+        uint8  m_Phase;                                     // Current phase, max 32 phases
 
     protected:
         uint32 m_EventUpdateTime;                           //Time between event updates
@@ -642,10 +643,6 @@ class MANGOS_DLL_SPEC CreatureEventAI : public CreatureAI
         //Variables used by Events themselves
         typedef std::vector<CreatureEventAIHolder> CreatureEventAIList;
         CreatureEventAIList m_CreatureEventAIList;          //Holder for events (stores enabled, time, and eventid)
-
-        uint8  m_Phase;                                     // Current phase, max 32 phases
-        bool   m_CombatMovementEnabled;                     // If we allow targeted movment gen (movement twoards top threat)
-        bool   m_MeleeEnabled;                              // If we allow melee auto attack
         float  m_AttackDistance;                            // Distance to attack from
         float  m_AttackAngle;                               // Angle of attack
         uint32 m_InvinceabilityHpLevel;                     // Minimal health level allowed at damage apply
