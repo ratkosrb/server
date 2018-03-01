@@ -554,6 +554,8 @@ class ObjectMgr
         ObjectMgr();
         ~ObjectMgr();
 
+        void ConvertEventActions();
+
         // Stores all existing ids in the database, not necessarily valid or loaded.
         void LoadAllIdentifiers();
         bool IsExistingItemId(uint32 id) { return (m_ItemIdSet.find(id) != m_ItemIdSet.end()); }

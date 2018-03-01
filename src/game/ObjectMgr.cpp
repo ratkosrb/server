@@ -52,6 +52,9 @@
 #include "InstanceData.h"
 #include "CharacterDatabaseCache.h"
 #include "HardcodedEvents.h"
+#include <fstream>
+#include <iostream>
+#include "CreatureEventAI.h"
 
 #include <limits>
 
@@ -165,6 +168,253 @@ ObjectMgr::~ObjectMgr()
 
     for (PlayerCacheDataMap::iterator itr = m_playerCacheData.begin(); itr != m_playerCacheData.end(); ++itr)
         delete itr->second;
+}
+
+void ObjectMgr::ConvertEventActions()
+{
+    std::ofstream myfile("event_actions.sql");
+    if (!myfile.is_open())
+        return;
+
+    struct EventAiAction
+    {
+        uint32 action_type;
+        int action_param1;
+        int action_param2;
+        int action_param3;
+        EventAiAction(uint32 _action_type, int _action_param1, int _action_param2, int _action_param3) : action_type(_action_type), action_param1(_action_param1), action_param2(_action_param2), action_param3(_action_param3) {}
+    };
+
+    Field* fields;
+    QueryResult* result = WorldDatabase.Query("SELECT id, action1_type, action1_param1, action1_param2, action1_param3, action2_type, action2_param1, action2_param2, action2_param3, action3_type, action3_param1, action3_param2, action3_param3, comment FROM creature_ai_scripts WHERE NOT (event_flags & 32)");
+
+    if (result)
+    {
+        do
+        {
+            fields = result->Fetch();
+
+            std::vector<EventAiAction> actions;
+
+            uint32 id = fields[0].GetUInt32();
+            uint32 action1_type = fields[1].GetUInt32();
+            int action1_param1 = fields[2].GetInt32();
+            int action1_param2 = fields[3].GetInt32();
+            int action1_param3 = fields[4].GetInt32();
+            if (action1_type)
+                actions.emplace_back(action1_type, action1_param1, action1_param2, action1_param3);
+            uint32 action2_type = fields[5].GetUInt32();
+            int action2_param1 = fields[6].GetInt32();
+            int action2_param2 = fields[7].GetInt32();
+            int action2_param3 = fields[8].GetInt32();
+            if (action2_type)
+                actions.emplace_back(action2_type, action2_param1, action2_param2, action2_param3);
+            uint32 action3_type = fields[9].GetUInt32();
+            int action3_param1 = fields[10].GetInt32();
+            int action3_param2 = fields[11].GetInt32();
+            int action3_param3 = fields[12].GetInt32();
+            if (action3_type)
+                actions.emplace_back(action3_type, action3_param1, action3_param2, action3_param3);
+
+            if (actions.empty())
+                continue;
+
+            std::string comment = fields[13].GetCppString();
+
+            myfile << "INSERT INTO `creature_ai_actions` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
+
+            for (int i = 0; i < actions.size(); i++)
+            {
+                uint32 delay = 0;
+                uint32 command = 0;
+                uint32 datalong = 0;
+                uint32 datalong2 = 0;
+                uint32 datalong3 = 0;
+                uint32 datalong4 = 0;
+                uint32 buddy_id = 0;
+                uint32 buddy_radius = 0;
+                uint32 buddy_type = 0;
+                uint32 data_flags = 0;
+                int dataint = 0;
+                int dataint2 = 0;
+                int dataint3 = 0;
+                int dataint4 = 0;
+                float x = 0;
+                float y = 0;
+                float z = 0;
+                float o = 0;
+                uint32 condition_id = 0;
+
+                switch (actions[i].action_type)
+                {
+                    case ACTION_T_TEXT:
+                    {
+                        command = SCRIPT_COMMAND_TALK;
+                        dataint = actions[i].action_param1;
+                        dataint2 = actions[i].action_param2;
+                        dataint3 = actions[i].action_param3;
+                        break;
+                    }
+                    case ACTION_T_SET_FACTION:
+                    {
+                        command = SCRIPT_COMMAND_SET_FACTION;
+                        datalong = actions[i].action_param1;
+                        datalong2 = actions[i].action_param2;
+                        break;
+                    }
+                    case ACTION_T_MORPH_TO_ENTRY_OR_MODEL:
+                    {
+                        command = SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL;
+                        if (actions[i].action_param1 > 0) // creatureId
+                        {
+                            datalong = actions[i].action_param1;
+                        }
+                        else if (actions[i].action_param2 > 0) // modelId
+                        {
+                            datalong = actions[i].action_param2; 
+                            datalong2 = 1; // is_display_id
+                        }
+                        break;
+                    }
+                    case ACTION_T_SOUND:
+                    {
+                        command = SCRIPT_COMMAND_PLAY_SOUND;
+                        datalong = actions[i].action_param1; // sound_id
+                        break;
+                    }
+                    case ACTION_T_EMOTE:
+                    {
+                        command = SCRIPT_COMMAND_EMOTE;
+                        datalong = actions[i].action_param1; // emote_id
+                        break;
+                    }
+                    case ACTION_T_RANDOM_SOUND:
+                    {
+                        // unused
+                        break;
+                    }
+                    case ACTION_T_RANDOM_EMOTE:
+                    {
+                        command = SCRIPT_COMMAND_EMOTE;
+                        datalong = actions[i].action_param1; // emote_id
+                        dataint = actions[i].action_param2; // emote_id
+                        dataint2 = actions[i].action_param3; // emote_id
+                        break;
+                    }
+                    case ACTION_T_CAST:
+                    {
+                        command = SCRIPT_COMMAND_CAST_SPELL;
+                        datalong = actions[i].action_param1; // spell_id
+                        datalong2 = actions[i].action_param3; // cast_flags
+
+                        // target
+                        if (actions[i].action_param2 == 0)
+                            datalong3 = 6;
+                        else if (actions[i].action_param2 == 6)
+                            datalong3 = 0;
+                        else
+                            datalong3 = actions[i].action_param2;
+
+                        break;
+                    }
+                    case ACTION_T_SUMMON:
+                    {
+                        command = SCRIPT_COMMAND_TEMP_SUMMON_CREATURE;
+                        datalong = actions[i].action_param1; // creature_id
+                        datalong2 = actions[i].action_param3; // despawn_delay
+
+                        // attack target
+                        if (actions[i].action_param2 == 0)
+                            dataint3 = 6;
+                        else if (actions[i].action_param2 == 6)
+                            dataint3 = 0;
+                        else
+                            dataint3 = actions[i].action_param2;
+
+                        // type different if no despawn delay
+                        if (datalong2)
+                            dataint4 = TEMPSUMMON_TIMED_OR_DEAD_DESPAWN;
+                        else
+                            dataint4 = TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT;
+
+                        break;
+                    }
+                    case ACTION_T_THREAT_SINGLE_PCT:
+                    {
+                        command = SCRIPT_COMMAND_MODIFY_THREAT;
+                        x = actions[i].action_param1;
+
+                        // target
+                        if (actions[i].action_param2 == 6)
+                            datalong = 0;
+                        else
+                            datalong = actions[i].action_param2;
+
+                        break;
+                    }
+                    case ACTION_T_THREAT_ALL_PCT:
+                    {
+                        command = SCRIPT_COMMAND_MODIFY_THREAT;
+                        x = actions[i].action_param1;
+
+                        // SO_MODIFYTHREAT_ALL_ATTACKERS
+                        datalong = 6;
+                        break;
+                    }
+                    case ACTION_T_QUEST_EVENT:
+                    {
+                        command = SCRIPT_COMMAND_QUEST_EXPLORED;
+                        datalong = actions[i].action_param1;
+
+                        break;
+                    }
+                    case ACTION_T_CAST_EVENT:
+                    {
+                        // unused
+                        break;
+                    }
+                    case ACTION_T_SET_UNIT_FIELD:
+                    {
+                        command = SCRIPT_COMMAND_FIELD_SET;
+                        datalong = actions[i].action_param1; // field
+                        datalong2 = actions[i].action_param2; // value
+
+                        if (actions[i].action_param3 == 0)
+                            data_flags = SF_GENERAL_TARGET_SELF;
+                        break;
+                    }
+                    case ACTION_T_SET_UNIT_FLAG:
+                    {
+                        command = SCRIPT_COMMAND_MODIFY_FLAGS;
+                        datalong = actions[i].action_param3; //field
+                        datalong2 = actions[i].action_param1; //value
+                        datalong3 = SO_MODIFYFLAGS_SET; //mode
+                        break;
+                    }
+                    case ACTION_T_REMOVE_UNIT_FLAG:
+                    {
+                        command = SCRIPT_COMMAND_MODIFY_FLAGS;
+                        datalong = actions[i].action_param3; //field
+                        datalong2 = actions[i].action_param1; //value
+                        datalong3 = SO_MODIFYFLAGS_REMOVE; //mode
+                        break;
+                    }
+                    case ACTION_T_AUTO_ATTACK:
+                    {
+                        command = 42; // SCRIPT_COMMAND_ENABLE_MELEE
+                        datalong = actions[i].action_param1; //state
+                        break;
+                    }
+                    case ACTION_T_COMBAT_MOVEMENT
+                    {
+                        command = 55; // TEMP FIX ME!!!!
+                        break;
+                    }
+                }
+            }
+        } while (result->NextRow());
+        delete result;
+    }
 }
 
 void ObjectMgr::LoadAllIdentifiers()
