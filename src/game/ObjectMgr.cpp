@@ -55,6 +55,7 @@
 #include <fstream>
 #include <iostream>
 #include "CreatureEventAI.h"
+#include "CreatureEventAIMgr.h"
 
 #include <limits>
 
@@ -405,9 +406,142 @@ void ObjectMgr::ConvertEventActions()
                         datalong = actions[i].action_param1; //state
                         break;
                     }
-                    case ACTION_T_COMBAT_MOVEMENT
+                    case ACTION_T_COMBAT_MOVEMENT:
                     {
-                        command = 55; // TEMP FIX ME!!!!
+                        // DIFFERENT IMPLEMENTATION. FIX SCRIPTS MANUALLY LATER.
+                        command = 43; // SCRIPT_COMMAND_SET_COMBAT_MOVEMENT
+                        datalong = actions[i].action_param1; //state
+                        break;
+                    }
+                    case ACTION_T_SET_PHASE:
+                    {
+                        command = 44; // SCRIPT_COMMAND_SET_PHASE
+                        datalong = actions[i].action_param1; //phase
+                        break;
+                    }
+                    case ACTION_T_INC_PHASE:
+                    {
+                        command = 44; // SCRIPT_COMMAND_SET_PHASE
+                        int step = actions[i].action_param1; //phase
+                        if (step > 0)
+                        {
+                            datalong = step;
+                            datalong2 = 1; // increment
+                        }
+                        else
+                        {
+                            step = step * (-1);
+                            datalong = step;
+                            datalong2 = 2; // decrement
+                        }
+                        break;
+                    }
+                    case ACTION_T_EVADE:
+                    {
+                        command = SCRIPT_COMMAND_ENTER_EVADE_MODE;
+                        break;
+                    }
+                    case ACTION_T_FLEE:
+                    {
+                        command = 47; // SCRIPT_COMMAND_FLEE
+                        break;
+                    }
+                    case ACTION_T_QUEST_EVENT_ALL:
+                    case ACTION_T_CAST_EVENT_ALL:
+                    {
+                        // unused
+                        break;
+                    }
+                    case ACTION_T_REMOVEAURASFROMSPELL:
+                    {
+                        command = SCRIPT_COMMAND_REMOVE_AURA;
+                        datalong = actions[i].action_param2; // spell_id
+                        break;
+                    }
+                    case ACTION_T_RANGED_MOVEMENT:
+                    {
+                        // DEPRACATED. FIX SCRIPTS MANUALLY LATER.
+                        command = 43; // SCRIPT_COMMAND_SET_COMBAT_MOVEMENT
+                        datalong = 0; //disabled
+                        break;
+                    }
+                    case ACTION_T_RANDOM_PHASE:
+                    {
+                        command = 45; // SCRIPT_COMMAND_SET_PHASE_RANDOM
+                        datalong = actions[i].action_param1; // phase 1
+                        datalong2 = actions[i].action_param2; // phase 2
+                        datalong3 = actions[i].action_param3; // phase 3
+                        break;
+                    }
+                    case ACTION_T_RANDOM_PHASE_RANGE:
+                    {
+                        command = 46; // SCRIPT_COMMAND_SET_PHASE_RANGE
+                        datalong = actions[i].action_param1; // phase_min
+                        datalong2 = actions[i].action_param2; // phase_max
+                        break;
+                    }
+                    case ACTION_T_SUMMON_ID:
+                    {
+                        command = SCRIPT_COMMAND_TEMP_SUMMON_CREATURE;
+
+                        uint32 creatureId = actions[i].action_param1;
+                        uint32 target = actions[i].action_param2;
+                        uint32 spawnId = actions[i].action_param3;
+
+                        datalong = creatureId;
+
+                        // attack target
+                        if (target == 0)
+                            dataint3 = 6;
+                        else if (target == 6)
+                            dataint3 = 0;
+                        else
+                            dataint3 = target;
+
+                        CreatureEventAI_Summon_Map::const_iterator i = sEventAIMgr.GetCreatureEventAISummonMap().find(spawnId);
+                        if (i == sEventAIMgr.GetCreatureEventAISummonMap().end())
+                        {
+                            sLog.outError("CreatureEventAI: Missing spawn data for creature %u. Summon map index %u does not exist.", creatureId, spawnId);
+                            break;
+                        }
+
+                        datalong2 = (*i).second.SpawnTimeSecs; // despawn_delay
+
+                        // type different if no despawn delay
+                        if (datalong2)
+                            dataint4 = TEMPSUMMON_TIMED_OR_DEAD_DESPAWN;
+                        else
+                            dataint4 = TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT;
+
+                        x = (*i).second.position_x;
+                        y = (*i).second.position_y;
+                        z = (*i).second.position_z;
+                        o = (*i).second.orientation;
+
+                        break;
+                    }
+                    case ACTION_T_KILLED_MONSTER:
+                    {
+                        // not used in db
+                        break;
+                    }
+                    case ACTION_T_SET_INST_DATA:
+                    {
+                        command = SCRIPT_COMMAND_SET_INST_DATA;
+                        datalong = actions[i].action_param1; // field
+                        datalong2 = actions[i].action_param2; // data
+                        break;
+                    }
+                    case ACTION_T_SET_INST_DATA64:
+                    {
+                        // not used in db
+                        break;
+                    }
+                    case ACTION_T_UPDATE_TEMPLATE:
+                    {
+                        command = SCRIPT_COMMAND_UPDATE_ENTRY;
+                        datalong = actions[i].action_param1; // creature_entry
+                        datalong2 = actions[i].action_param2; // team
                         break;
                     }
                 }
