@@ -803,6 +803,52 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
 
                 break;
             }
+            case SCRIPT_COMMAND_SET_PHASE:
+            {
+                if (tmp.setPhase.phase >= 32) // Max EventAI phase.
+                {
+                    sLog.outErrorDb("Table `%s` has datalong = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE for script id %u.", tablename, tmp.setPhase.mode, tmp.id);
+                    continue;
+                }
+                if (tmp.setPhase.mode >= SO_SETPHASE_MAX)
+                {
+                    sLog.outErrorDb("Table `%s` has invalid option datalong2 = %u in SCRIPT_COMMAND_SET_PHASE for script id %u.", tablename, tmp.setPhase.mode, tmp.id);
+                    continue;
+                }
+                break;
+            }
+            case SCRIPT_COMMAND_SET_PHASE_RANDOM:
+            {
+                bool error = false;
+                for (uint8 i = 0; i < 4; i++)
+                {
+                    if (tmp.setPhaseRandom.phase[i] >= 32) // Max EventAI phase.
+                    {
+                        sLog.outErrorDb("Table `%s` has datalong%u = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE_RANDOM for script id %u.", tablename, i, tmp.setPhase.mode, tmp.id);
+                        error = true;
+                        break;
+                    }
+                }
+
+                if (error)
+                    continue;
+
+                break;
+            }
+            case SCRIPT_COMMAND_SET_PHASE_RANGE:
+            {
+                if (tmp.setPhaseRange.phaseMax >= 32) // Max EventAI phase.
+                {
+                    sLog.outErrorDb("Table `%s` has datalong2 = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE_RANGE for script id %u.", tablename, tmp.setPhaseRange.phaseMax, tmp.id);
+                    continue;
+                }
+                if (tmp.setPhaseRange.phaseMin >= tmp.setPhaseRange.phaseMax)
+                {
+                    sLog.outErrorDb("Table `%s` has phase_min (datalong=%u) >= phase_max (datalong2=%u) in SCRIPT_COMMAND_SET_PHASE_RANGE for script id %u.", tablename, tmp.setPhaseRange.phaseMin, tmp.setPhaseRange.phaseMax, tmp.id);
+                    continue;
+                }
+                break;
+            }
         }
 
         if (scripts.find(tmp.id) == scripts.end())

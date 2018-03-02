@@ -201,6 +201,16 @@ enum eScriptCommand
                                                             // datalong = (bool) 0 = off, 1 = on
     SCRIPT_COMMAND_SET_COMBAT_MOVEMENT      = 43,           // source = Creature
                                                             // datalong = (bool) 0 = off, 1 = on
+    SCRIPT_COMMAND_SET_PHASE                = 44,           // source = Creature
+                                                            // datalong = phase
+                                                            // datalong2 = eSetPhaseOptions
+    SCRIPT_COMMAND_SET_PHASE_RANDOM         = 45,           // source = Creature
+                                                            // datalong1-4 = phase
+    SCRIPT_COMMAND_SET_PHASE_RANGE          = 46,           // source = Creature
+                                                            // datalong = phase_min
+                                                            // datalong2 = phase_max
+    SCRIPT_COMMAND_FLEE                     = 47,           // source = Creature
+                                                            // datalong = seek_assistance (bool) 0 = off, 1 = on
     SCRIPT_COMMAND_MAX,
 
     SCRIPT_COMMAND_DISABLED                 = 9999          // Script action was disabled during loading.
@@ -302,6 +312,16 @@ enum eSetInstData64Options
     SO_INSTDATA64_SOURCE_GUID = 1,
 
     SO_INSTDATA64_MAX
+};
+
+// Possible datalong values for SCRIPT_COMMAND_SET_PHASE
+enum eSetPhaseOptions
+{
+    SO_SETPHASE_RAW = 0,
+    SO_SETPHASE_INCREMENT = 1,
+    SO_SETPHASE_DECREMENT = 2,
+
+    SO_SETPHASE_MAX
 };
 
 // Values used in buddy_type column
@@ -596,6 +616,28 @@ struct ScriptInfo
         {
             uint32 enabled;                                 // datalong
         } combatMovement;
+
+        struct                                              // SCRIPT_COMMAND_SET_PHASE (44)
+        {
+            uint32 phase;                                   // datalong
+            uint32 mode;                                    // datalong2
+        } setPhase;
+
+        struct                                              // SCRIPT_COMMAND_SET_PHASE_RANDOM (45)
+        {
+            uint32 phase[MAX_TEXT_ID];                      // datalong
+        } setPhaseRandom;
+
+        struct                                              // SCRIPT_COMMAND_SET_PHASE_RANGE (46)
+        {
+            uint32 phaseMin;                                // datalong
+            uint32 phaseMax;                                // datalong2
+        } setPhaseRange;
+
+        struct                                              // SCRIPT_COMMAND_FLEE (47)
+        {
+            uint32 seekAssistance;                          // datalong
+        } flee;
 
         struct
         {

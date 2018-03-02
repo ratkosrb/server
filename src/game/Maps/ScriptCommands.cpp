@@ -20,6 +20,8 @@
 #include "ScriptMgr.h"
 #include "GridSearchers.h"
 #include "InstanceData.h"
+#include "CreatureEventAI.h"
+#include "CreatureAIImpl.h"
 
 // Script commands should return false by default.
 // If they return true the rest of the script is aborted.
@@ -541,15 +543,15 @@ bool Map::ScriptCommand_ActivateGameObject(ScriptAction& step, Object* source, O
 // SCRIPT_COMMAND_REMOVE_AURA (14)
 bool Map::ScriptCommand_RemoveAura(ScriptAction& step, Object* source, Object* target)
 {
-    Unit* pUnitTarget = ToUnit(source);
+    Unit* pSource = ToUnit(source);
 
-    if (!pUnitTarget)
+    if (!pSource)
     {
         sLog.outError("SCRIPT_COMMAND_REMOVE_AURA (script id %u) call for a NULL or non-unit source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
         return ShouldAbortScript(step);
     }
 
-    pUnitTarget->RemoveAurasDueToSpell(step.script->removeAura.spellId);
+    pSource->RemoveAurasDueToSpell(step.script->removeAura.spellId);
     return false;
 }
 
@@ -1095,10 +1097,6 @@ bool Map::ScriptCommand_SetData(ScriptAction& step, Object* source, Object* targ
     uint32 uiData = step.script->setData.data;
     switch (step.script->setData.type)
     {
-        case SO_INSTDATA_RAW:
-        {
-            break;
-        }
         case SO_INSTDATA_INCREMENT:
         {
             uiData+= pInst->GetData(step.script->setData.field);
@@ -1109,11 +1107,6 @@ bool Map::ScriptCommand_SetData(ScriptAction& step, Object* source, Object* targ
             uint32 uiOldData = pInst->GetData(step.script->setData.field);
             uiData = (uiData < uiOldData) ? (uiOldData - uiData) : 0;
             break;
-        }
-        default:
-        {
-            sLog.outError("SCRIPT_COMMAND_SET_INST_DATA (script id %u) call for an invalid type (datalong3=%u), skipping.", step.script->id, step.script->setData.type);
-            return ShouldAbortScript(step);
         }
     }
 
@@ -1149,11 +1142,6 @@ bool Map::ScriptCommand_SetData64(ScriptAction& step, Object* source, Object* ta
                 return ShouldAbortScript(step);
             }
             break;
-        }
-        default:
-        {
-            sLog.outError("SCRIPT_COMMAND_SET_INST_DATA64 (script id %u) call for an invalid type (datalong3=%u), skipping.", step.script->id, step.script->setData64.type);
-            return ShouldAbortScript(step);
         }
     }
 
@@ -1252,5 +1240,129 @@ bool Map::ScriptCommand_SetCombatMovement(ScriptAction& step, Object* source, Ob
     }
 
     pSource->AI()->SetCombatMovement(step.script->combatMovement.enabled);
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_PHASE (44)
+bool Map::ScriptCommand_SetPhase(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_PHASE (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    CreatureEventAI* pAI;
+
+    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_PHASE (script id %u) call for a creature not using EventAI, skipping.", step.script->id);
+        return ShouldAbortScript(step);
+    }
+
+    uint32 uiPhase = step.script->setPhase.phase;
+
+    switch (step.script->setPhase.mode)
+    {
+        case SO_SETPHASE_INCREMENT:
+        {
+            uiPhase+= pAI->m_Phase;
+            break;
+        }
+        case SO_SETPHASE_DECREMENT:
+        {
+            uint32 uiOldPhase = pAI->m_Phase;
+            uiPhase = (uiPhase < uiOldPhase) ? (uiOldPhase - uiPhase) : 0;
+            break;
+        }
+    }
+
+    if (uiPhase >= MAX_PHASE)
+    {
+        sLog.outErrorDb("SCRIPT_COMMAND_SET_PHASE (script id %u) attempt to increment Phase above %u. Phase mask cannot be used with phases past %u. CreatureEntry = %d", step.script->id, MAX_PHASE - 1, MAX_PHASE - 1, pSource->GetEntry());
+        return ShouldAbortScript(step);
+    }
+
+    pAI->m_Phase = uiPhase;
+
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_PHASE_RANDOM (45)
+bool Map::ScriptCommand_SetPhaseRandom(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_PHASE_RANDOM (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    CreatureEventAI* pAI;
+
+    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_PHASE_RANDOM (script id %u) call for a creature not using EventAI, skipping.", step.script->id);
+        return ShouldAbortScript(step);
+    }
+
+    uint32 phase1 = step.script->setPhaseRandom.phase[0];
+    uint32 phase2 = step.script->setPhaseRandom.phase[1];
+    uint32 phase3 = step.script->setPhaseRandom.phase[2];
+    uint32 phase4 = step.script->setPhaseRandom.phase[3];
+
+    if (phase4)
+        pAI->m_Phase = RAND(phase1, phase2, phase3, phase4);
+    else if (phase3)
+        pAI->m_Phase = RAND(phase1, phase2, phase3);
+    else
+        pAI->m_Phase = RAND(phase1, phase2);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_PHASE_RANGE (46)
+bool Map::ScriptCommand_SetPhaseRange(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_PHASE_RANGE (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    CreatureEventAI* pAI;
+
+    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_PHASE_RANGE (script id %u) call for a creature not using EventAI, skipping.", step.script->id);
+        return ShouldAbortScript(step);
+    }
+
+    pAI->m_Phase = urand(step.script->setPhaseRange.phaseMin, step.script->setPhaseRange.phaseMax);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_FLEE (47)
+bool Map::ScriptCommand_Flee(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_FLEE (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    if (step.script->flee.seekAssistance)
+        pSource->DoFleeToGetAssistance();
+    else
+        pSource->DoFlee();
+
     return false;
 }

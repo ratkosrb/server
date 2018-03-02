@@ -687,6 +687,10 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         bool ScriptCommand_RemoveGameObject(ScriptAction& step, Object* source, Object* target);
         bool ScriptCommand_SetMeleeAttack(ScriptAction& step, Object* source, Object* target);
         bool ScriptCommand_SetCombatMovement(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_SetPhase(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_SetPhaseRandom(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_SetPhaseRange(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_Flee(ScriptAction& step, Object* source, Object* target);
 
         // Add any new script command functions to the array.
         const ScriptCommandFunction m_ScriptCommands[SCRIPT_COMMAND_MAX] =
@@ -735,6 +739,10 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
             &Map::ScriptCommand_RemoveGameObject,       // 41
             &Map::ScriptCommand_SetMeleeAttack,         // 42
             &Map::ScriptCommand_SetCombatMovement,      // 43
+            &Map::ScriptCommand_SetPhase,               // 44
+            &Map::ScriptCommand_SetPhaseRandom,         // 45
+            &Map::ScriptCommand_SetPhaseRange,          // 46
+            &Map::ScriptCommand_Flee,                   // 47
         };
 
     public:
