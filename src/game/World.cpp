@@ -1616,6 +1616,9 @@ void World::SetInitialWorldSettings()
     sLog.outString("Loading GameObject models ...");
     LoadGameObjectModelList();
 
+    sLog.outString("Converting EventAI actions to new system...");
+    sObjectMgr.ConvertEventActions();
+
     ///- Initialize MapManager
     sLog.outString("Starting Map System");
     sMapMgr.Initialize();

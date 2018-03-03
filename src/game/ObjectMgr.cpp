@@ -171,6 +171,20 @@ ObjectMgr::~ObjectMgr()
         delete itr->second;
 }
 
+std::string ReplaceString(std::string subject) {
+    if (subject.empty()) { return std::string(); }
+    size_t pos = 0;
+    for (int i = 0; i < subject.length(); i++)
+    {
+        if (subject.at(i) == 39) //'
+            subject.at(i) = ' ';
+    }
+    return subject;
+}
+
+#define NEW_RANDOM_ACTION_FLAG 0x02
+#define NEW_DEBUG_ONLY_FLAG 0x04
+
 void ObjectMgr::ConvertEventActions()
 {
     std::ofstream myfile("event_actions.sql");
@@ -187,7 +201,7 @@ void ObjectMgr::ConvertEventActions()
     };
 
     Field* fields;
-    QueryResult* result = WorldDatabase.Query("SELECT id, action1_type, action1_param1, action1_param2, action1_param3, action2_type, action2_param1, action2_param2, action2_param3, action3_type, action3_param1, action3_param2, action3_param3, comment FROM creature_ai_scripts WHERE NOT (event_flags & 32)");
+    QueryResult* result = WorldDatabase.Query("SELECT id, creature_id, event_flags, action1_type, action1_param1, action1_param2, action1_param3, action2_type, action2_param1, action2_param2, action2_param3, action3_type, action3_param1, action3_param2, action3_param3 FROM creature_ai_scripts ORDER BY creature_id, id");
 
     if (result)
     {
@@ -198,34 +212,64 @@ void ObjectMgr::ConvertEventActions()
             std::vector<EventAiAction> actions;
 
             uint32 id = fields[0].GetUInt32();
-            uint32 action1_type = fields[1].GetUInt32();
-            int action1_param1 = fields[2].GetInt32();
-            int action1_param2 = fields[3].GetInt32();
-            int action1_param3 = fields[4].GetInt32();
+            uint32 creature_id = fields[1].GetUInt32();
+            uint32 event_flags = fields[2].GetUInt32();
+            uint32 action1_type = fields[3].GetUInt32();
+            int action1_param1 = fields[4].GetInt32();
+            int action1_param2 = fields[5].GetInt32();
+            int action1_param3 = fields[6].GetInt32();
             if (action1_type)
                 actions.emplace_back(action1_type, action1_param1, action1_param2, action1_param3);
-            uint32 action2_type = fields[5].GetUInt32();
-            int action2_param1 = fields[6].GetInt32();
-            int action2_param2 = fields[7].GetInt32();
-            int action2_param3 = fields[8].GetInt32();
+            uint32 action2_type = fields[7].GetUInt32();
+            int action2_param1 = fields[8].GetInt32();
+            int action2_param2 = fields[9].GetInt32();
+            int action2_param3 = fields[10].GetInt32();
             if (action2_type)
                 actions.emplace_back(action2_type, action2_param1, action2_param2, action2_param3);
-            uint32 action3_type = fields[9].GetUInt32();
-            int action3_param1 = fields[10].GetInt32();
-            int action3_param2 = fields[11].GetInt32();
-            int action3_param3 = fields[12].GetInt32();
+            uint32 action3_type = fields[11].GetUInt32();
+            int action3_param1 = fields[12].GetInt32();
+            int action3_param2 = fields[13].GetInt32();
+            int action3_param3 = fields[14].GetInt32();
             if (action3_type)
                 actions.emplace_back(action3_type, action3_param1, action3_param2, action3_param3);
 
             if (actions.empty())
+            {
+                printf("Event %u has no actions! WTF?\n", id);
                 continue;
+            } 
 
-            std::string comment = fields[13].GetCppString();
+            std::string npc_name = "";
 
-            myfile << "INSERT INTO `creature_ai_actions` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
+            if (auto* pCreature = GetCreatureTemplate(creature_id))
+            {
+                npc_name = ReplaceString(std::string(pCreature->Name)) + std::string(" - ");
+            }
 
+            if (event_flags)
+            {
+                uint32 new_event_flags = 0;
+
+                if (event_flags & EFLAG_REPEATABLE)
+                    new_event_flags += EFLAG_REPEATABLE;
+                if (event_flags & EFLAG_RANDOM_ACTION)
+                    new_event_flags += NEW_RANDOM_ACTION_FLAG;
+                if (event_flags & EFLAG_DEBUG_ONLY)
+                    new_event_flags += NEW_DEBUG_ONLY_FLAG;
+
+                myfile << "UPDATE `creature_ai_events` SET `event_flags`=" << new_event_flags << " WHERE `id`=" << id << ";\n";
+            }
+
+            if (!(event_flags & EFLAG_RANDOM_ACTION))
+            {
+                myfile << "UPDATE `creature_ai_events` SET `action1_script`=" << id << " WHERE `id`=" << id << ";\n";
+                myfile << "INSERT INTO `creature_ai_actions` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
+            }
+            
             for (int i = 0; i < actions.size(); i++)
             {
+                std::string action_comment = npc_name;
+
                 uint32 delay = 0;
                 uint32 command = 0;
                 uint32 datalong = 0;
@@ -251,16 +295,20 @@ void ObjectMgr::ConvertEventActions()
                     case ACTION_T_TEXT:
                     {
                         command = SCRIPT_COMMAND_TALK;
-                        dataint = actions[i].action_param1;
-                        dataint2 = actions[i].action_param2;
-                        dataint3 = actions[i].action_param3;
+                        dataint = actions[i].action_param1; // text1
+                        dataint2 = actions[i].action_param2; // text2
+                        dataint3 = actions[i].action_param3; // text3
+
+                        action_comment = action_comment + "Say Text";
                         break;
                     }
                     case ACTION_T_SET_FACTION:
                     {
                         command = SCRIPT_COMMAND_SET_FACTION;
-                        datalong = actions[i].action_param1;
-                        datalong2 = actions[i].action_param2;
+                        datalong = actions[i].action_param1; // faction_id
+                        datalong2 = actions[i].action_param2; // flags
+
+                        action_comment = action_comment + "Set Faction to " + std::to_string(datalong);
                         break;
                     }
                     case ACTION_T_MORPH_TO_ENTRY_OR_MODEL:
@@ -275,23 +323,33 @@ void ObjectMgr::ConvertEventActions()
                             datalong = actions[i].action_param2; 
                             datalong2 = 1; // is_display_id
                         }
+
+                        if (datalong)
+                            action_comment = action_comment + "Morph to " + std::to_string(datalong);
+                        else
+                            action_comment = action_comment + "Demorph";
                         break;
                     }
                     case ACTION_T_SOUND:
                     {
                         command = SCRIPT_COMMAND_PLAY_SOUND;
                         datalong = actions[i].action_param1; // sound_id
+
+                        action_comment = action_comment + "Play Sound " + std::to_string(datalong);
                         break;
                     }
                     case ACTION_T_EMOTE:
                     {
                         command = SCRIPT_COMMAND_EMOTE;
                         datalong = actions[i].action_param1; // emote_id
+
+                        action_comment = action_comment + "Emote " + std::to_string(datalong);
                         break;
                     }
                     case ACTION_T_RANDOM_SOUND:
                     {
                         // unused
+                        printf("This should be unused! - ACTION_T_RANDOM_SOUND\n");
                         break;
                     }
                     case ACTION_T_RANDOM_EMOTE:
@@ -300,6 +358,8 @@ void ObjectMgr::ConvertEventActions()
                         datalong = actions[i].action_param1; // emote_id
                         dataint = actions[i].action_param2; // emote_id
                         dataint2 = actions[i].action_param3; // emote_id
+
+                        action_comment = action_comment + "Random Emote";
                         break;
                     }
                     case ACTION_T_CAST:
@@ -307,6 +367,9 @@ void ObjectMgr::ConvertEventActions()
                         command = SCRIPT_COMMAND_CAST_SPELL;
                         datalong = actions[i].action_param1; // spell_id
                         datalong2 = actions[i].action_param3; // cast_flags
+
+                        if (datalong2 & CAST_NO_MELEE_IF_OOM) // CAST_MAIN_RANGED_SPELL previously CAST_NO_MELEE_IF_OOM
+                            datalong2 -= CAST_NO_MELEE_IF_OOM;
 
                         // target
                         if (actions[i].action_param2 == 0)
@@ -316,6 +379,7 @@ void ObjectMgr::ConvertEventActions()
                         else
                             datalong3 = actions[i].action_param2;
 
+                        action_comment = action_comment + "Cast Spell " + ReplaceString(sSpellMgr.GetSpellEntry(datalong)->SpellName[0]);
                         break;
                     }
                     case ACTION_T_SUMMON:
@@ -338,6 +402,8 @@ void ObjectMgr::ConvertEventActions()
                         else
                             dataint4 = TEMPSUMMON_TIMED_DESPAWN_OUT_OF_COMBAT;
 
+                        action_comment = action_comment + "Summon Creature " + ReplaceString(GetCreatureTemplate(datalong)->Name);
+
                         break;
                     }
                     case ACTION_T_THREAT_SINGLE_PCT:
@@ -351,6 +417,8 @@ void ObjectMgr::ConvertEventActions()
                         else
                             datalong = actions[i].action_param2;
 
+                        action_comment = action_comment + "Reduce Target Threat by " + std::to_string(x) + "%";
+
                         break;
                     }
                     case ACTION_T_THREAT_ALL_PCT:
@@ -360,6 +428,8 @@ void ObjectMgr::ConvertEventActions()
 
                         // SO_MODIFYTHREAT_ALL_ATTACKERS
                         datalong = 6;
+
+                        action_comment = action_comment + "Reduce All Threat by " + std::to_string(x) + "%";
                         break;
                     }
                     case ACTION_T_QUEST_EVENT:
@@ -367,11 +437,13 @@ void ObjectMgr::ConvertEventActions()
                         command = SCRIPT_COMMAND_QUEST_EXPLORED;
                         datalong = actions[i].action_param1;
 
+                        action_comment = action_comment + "Complete Quest " + ReplaceString(GetQuestTemplate(datalong)->Title);
                         break;
                     }
                     case ACTION_T_CAST_EVENT:
                     {
                         // unused
+                        printf("This should be unused! - ACTION_T_CAST_EVENT\n");
                         break;
                     }
                     case ACTION_T_SET_UNIT_FIELD:
@@ -382,6 +454,8 @@ void ObjectMgr::ConvertEventActions()
 
                         if (actions[i].action_param3 == 0)
                             data_flags = SF_GENERAL_TARGET_SELF;
+
+                        action_comment = action_comment + "Set Field";
                         break;
                     }
                     case ACTION_T_SET_UNIT_FLAG:
@@ -390,6 +464,8 @@ void ObjectMgr::ConvertEventActions()
                         datalong = actions[i].action_param3; //field
                         datalong2 = actions[i].action_param1; //value
                         datalong3 = SO_MODIFYFLAGS_SET; //mode
+
+                        action_comment = action_comment + "Add Flag " + std::to_string(datalong2);
                         break;
                     }
                     case ACTION_T_REMOVE_UNIT_FLAG:
@@ -398,12 +474,19 @@ void ObjectMgr::ConvertEventActions()
                         datalong = actions[i].action_param3; //field
                         datalong2 = actions[i].action_param1; //value
                         datalong3 = SO_MODIFYFLAGS_REMOVE; //mode
+
+                        action_comment = action_comment + "Remove Flag " + std::to_string(datalong2);
                         break;
                     }
                     case ACTION_T_AUTO_ATTACK:
                     {
                         command = 42; // SCRIPT_COMMAND_ENABLE_MELEE
                         datalong = actions[i].action_param1; //state
+
+                        if (datalong)
+                            action_comment = action_comment + "Enable Melee Attack";
+                        else
+                            action_comment = action_comment + "Disable Melee Attack";
                         break;
                     }
                     case ACTION_T_COMBAT_MOVEMENT:
@@ -411,12 +494,19 @@ void ObjectMgr::ConvertEventActions()
                         // DIFFERENT IMPLEMENTATION. FIX SCRIPTS MANUALLY LATER.
                         command = 43; // SCRIPT_COMMAND_SET_COMBAT_MOVEMENT
                         datalong = actions[i].action_param1; //state
+
+                        if (datalong)
+                            action_comment = action_comment + "Enable Combat Movement";
+                        else
+                            action_comment = action_comment + "Disable Combat Movement";
                         break;
                     }
                     case ACTION_T_SET_PHASE:
                     {
                         command = 44; // SCRIPT_COMMAND_SET_PHASE
                         datalong = actions[i].action_param1; //phase
+
+                        action_comment = action_comment + "Set Phase to " + std::to_string(datalong);
                         break;
                     }
                     case ACTION_T_INC_PHASE:
@@ -427,35 +517,41 @@ void ObjectMgr::ConvertEventActions()
                         {
                             datalong = step;
                             datalong2 = 1; // increment
+                            action_comment = action_comment + "Increment Phase";
                         }
                         else
                         {
                             step = step * (-1);
                             datalong = step;
                             datalong2 = 2; // decrement
+                            action_comment = action_comment + "Decrement Phase";
                         }
                         break;
                     }
                     case ACTION_T_EVADE:
                     {
                         command = SCRIPT_COMMAND_ENTER_EVADE_MODE;
+                        action_comment = action_comment + "Enter Evade Mode";
                         break;
                     }
                     case ACTION_T_FLEE:
                     {
                         command = 47; // SCRIPT_COMMAND_FLEE
+                        action_comment = action_comment + "Flee";
                         break;
                     }
                     case ACTION_T_QUEST_EVENT_ALL:
                     case ACTION_T_CAST_EVENT_ALL:
                     {
                         // unused
+                        printf("This should be unused! - ACTION_T_QUEST_EVENT_ALL\n");
                         break;
                     }
                     case ACTION_T_REMOVEAURASFROMSPELL:
                     {
                         command = SCRIPT_COMMAND_REMOVE_AURA;
                         datalong = actions[i].action_param2; // spell_id
+                        action_comment = action_comment + "Remove Aura " + ReplaceString(sSpellMgr.GetSpellEntry(datalong)->SpellName[0]);
                         break;
                     }
                     case ACTION_T_RANGED_MOVEMENT:
@@ -463,6 +559,8 @@ void ObjectMgr::ConvertEventActions()
                         // DEPRACATED. FIX SCRIPTS MANUALLY LATER.
                         command = 43; // SCRIPT_COMMAND_SET_COMBAT_MOVEMENT
                         datalong = 0; //disabled
+
+                        action_comment = action_comment + "Set Ranged Movement";
                         break;
                     }
                     case ACTION_T_RANDOM_PHASE:
@@ -471,6 +569,8 @@ void ObjectMgr::ConvertEventActions()
                         datalong = actions[i].action_param1; // phase 1
                         datalong2 = actions[i].action_param2; // phase 2
                         datalong3 = actions[i].action_param3; // phase 3
+
+                        action_comment = action_comment + "Random Phase";
                         break;
                     }
                     case ACTION_T_RANDOM_PHASE_RANGE:
@@ -478,6 +578,7 @@ void ObjectMgr::ConvertEventActions()
                         command = 46; // SCRIPT_COMMAND_SET_PHASE_RANGE
                         datalong = actions[i].action_param1; // phase_min
                         datalong2 = actions[i].action_param2; // phase_max
+                        action_comment = action_comment + "Random Phase between " + std::to_string(datalong) + " and " + std::to_string(datalong2);
                         break;
                     }
                     case ACTION_T_SUMMON_ID:
@@ -518,11 +619,14 @@ void ObjectMgr::ConvertEventActions()
                         z = (*i).second.position_z;
                         o = (*i).second.orientation;
 
+                        action_comment = action_comment + "Summon Creature " + ReplaceString(GetCreatureTemplate(creatureId)->Name);
+
                         break;
                     }
                     case ACTION_T_KILLED_MONSTER:
                     {
-                        // not used in db
+                        // unused
+                        printf("This should be unused! - ACTION_T_KILLED_MONSTER\n");
                         break;
                     }
                     case ACTION_T_SET_INST_DATA:
@@ -530,11 +634,14 @@ void ObjectMgr::ConvertEventActions()
                         command = SCRIPT_COMMAND_SET_INST_DATA;
                         datalong = actions[i].action_param1; // field
                         datalong2 = actions[i].action_param2; // data
+
+                        action_comment = action_comment + "Set Instance Data";
                         break;
                     }
                     case ACTION_T_SET_INST_DATA64:
                     {
-                        // not used in db
+                        // unused
+                        printf("This should be unused! - ACTION_T_SET_INST_DATA64\n");
                         break;
                     }
                     case ACTION_T_UPDATE_TEMPLATE:
@@ -542,13 +649,186 @@ void ObjectMgr::ConvertEventActions()
                         command = SCRIPT_COMMAND_UPDATE_ENTRY;
                         datalong = actions[i].action_param1; // creature_entry
                         datalong2 = actions[i].action_param2; // team
+
+                        action_comment = action_comment + "Update Entry to " + ReplaceString(GetCreatureTemplate(datalong)->Name);
                         break;
                     }
+                    case ACTION_T_DIE:
+                    {
+                        command = 48; // SCRIPT_COMMAND_DEAL_DAMAGE
+                        datalong = 100; // damage
+                        datalong2 = 1; // is_percent
+                        data_flags = SF_GENERAL_TARGET_SELF;
+
+                        action_comment = action_comment + "Die";
+                        break;
+                    }
+                    case ACTION_T_ZONE_COMBAT_PULSE:
+                    {
+                        command = 49; // SCRIPT_COMMAND_ZONE_COMBAT_PULSE
+                        datalong = 1; // initial_pulse
+
+                        action_comment = action_comment + "Combat Pulse";
+                        break;
+                    }
+                    case ACTION_T_CALL_FOR_HELP:
+                    {
+                        command = 50; // SCRIPT_COMMAND_CALL_FOR_HELP
+                        x = actions[i].action_param1; // radius
+
+                        action_comment = action_comment + "Call for Help";
+                        break;
+                    }
+                    case ACTION_T_SET_SHEATH:
+                    {
+                        command = 51; // SCRIPT_COMMAND_SET_SHEATH
+                        datalong = actions[i].action_param1; // sheath_state
+
+                        action_comment = action_comment + "Set Sheath State";
+                        break;
+                    }
+                    case ACTION_T_FORCE_DESPAWN:
+                    {
+                        command = SCRIPT_COMMAND_DESPAWN_CREATURE;
+                        datalong = actions[i].action_param1; // despawn_delay
+
+                        action_comment = action_comment + "Despawn Self";
+                        break;
+                    }
+                    case ACTION_T_SET_INVINCIBILITY_HP_LEVEL:
+                    {
+                        command = 52; // SCRIPT_COMMAND_INVINCIBILITY
+                        datalong = actions[i].action_param1; // hp_level
+                        datalong2 = actions[i].action_param2; // is_percent
+
+                        if (datalong2)
+                            action_comment = action_comment + "Set Invincibility at " + std::to_string(datalong) + "%";
+                        else
+                            action_comment = action_comment + "Set Invincibility at " + std::to_string(datalong) + "HP";
+
+                        break;
+                    }
+                    case ACTION_T_MOUNT_TO_ENTRY_OR_MODEL:
+                    {
+                        command = SCRIPT_COMMAND_MOUNT_TO_ENTRY_OR_MODEL;
+                        uint32 creatureId = actions[i].action_param1;
+                        uint32 displayId = actions[i].action_param2;
+
+                        if (creatureId)
+                        {
+                            datalong = creatureId;
+                        }
+                        else if (displayId)
+                        {
+                            datalong = displayId;
+                            datalong2 = 1; // is_display_id
+                        }
+
+                        if (datalong)
+                            action_comment = action_comment + "Mount";
+                        else
+                            action_comment = action_comment + "Dismount";
+
+                        break;
+                    }
+                    case ACTION_T_SET_GAME_EVENT:
+                    {
+                        command = 53; // SCRIPT_COMMAND_GAME_EVENT
+                        datalong = actions[i].action_param1; // event_id
+                        datalong2 = actions[i].action_param2; // start
+                        datalong3 = actions[i].action_param3; // overwrite
+
+                        if (datalong2)
+                            action_comment = action_comment + "Start Game Event " + std::to_string(datalong);
+                        else
+                            action_comment = action_comment + "Stop Game Event " + std::to_string(datalong);
+
+                        break;
+                    }
+                    case ACTION_T_SET_STAND_STATE:
+                    {
+                        command = SCRIPT_COMMAND_STAND_STATE;
+                        datalong = actions[i].action_param1; // stand_state
+
+                        action_comment = action_comment + "Set Stand State";
+                        break;
+                    }
+                    case ACTION_T_CHANGE_MOVEMENT:
+                    {
+                        command = SCRIPT_COMMAND_MOVEMENT;
+                        datalong = actions[i].action_param1; // movement_type
+
+                        switch (datalong)
+                        {
+                            case IDLE_MOTION_TYPE:
+                                action_comment = action_comment + "Set Movement to Idle";
+                                break;
+                            case RANDOM_MOTION_TYPE:
+                                action_comment = action_comment + "Start Random Movement";
+                                break;
+                            case WAYPOINT_MOTION_TYPE:
+                                datalong2 = 1; // bool_param (repeat)
+                                action_comment = action_comment + "Start Waypoint Movement";
+                                break;
+                        }
+                        
+                        break;
+                    }
+                    case ACTION_T_SET_VARIABLE:
+                    {
+                        command = 54; // SCRIPT_COMMAND_SET_SERVER_VARIABLE
+                        datalong = actions[i].action_param1; // index
+                        datalong2 = actions[i].action_param2; // value
+
+                        action_comment = action_comment + "Set Variable " + std::to_string(datalong) + " to " + std::to_string(datalong2);
+                        break;
+                    }
+                    case ACTION_T_EVENT_SCRIPT:
+                    {
+                        command = SCRIPT_COMMAND_START_SCRIPT;
+                        datalong = actions[i].action_param1; // script_id
+                        dataint = 100; // chance
+
+                        action_comment = action_comment + "Start Event Script  " + std::to_string(datalong);
+                        break;
+                    }
+                    default:
+                    {
+                        printf("Unhandled command type %u! This should not be happening.\n", actions[i].action_type);
+                        break;
+                    }
+                }
+
+                uint32 script_id = (event_flags & EFLAG_RANDOM_ACTION) ? id + 20 + i : id;
+
+                if (event_flags & EFLAG_RANDOM_ACTION)
+                    myfile << "INSERT INTO `creature_ai_actions` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES ";
+
+                myfile << "(" << script_id << ", " << delay << ", " << command << ", " << datalong << ", " << datalong2 << ", " << datalong3 << ", " << datalong4 << ", " << buddy_id << ", " << buddy_radius << ", " << buddy_type << ", " << data_flags << ", " << dataint << ", " << dataint2 << ", " << dataint3 << ", " << dataint4 << ", " << x << ", " << y << ", " << z << ", " << o << ", " << condition_id << ", '" << action_comment << "')";
+                
+                if (!(event_flags & EFLAG_RANDOM_ACTION))
+                {
+                    if (i == actions.size() - 1)
+                        myfile << ";\n\n";
+                    else
+                        myfile << ",\n";
+                }
+                else
+                {
+                    myfile << ";\n";
+                    myfile << "UPDATE `creature_ai_events` SET `action" << (i+1) << "_script`=" << script_id << " WHERE `id`=" << id << ";\n";
+
+                    if (i == actions.size() - 1)
+                        myfile << "\n";
                 }
             }
         } while (result->NextRow());
         delete result;
     }
+
+    myfile.close();
+    system("pause");
+    exit(0);
 }
 
 void ObjectMgr::LoadAllIdentifiers()
