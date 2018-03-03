@@ -182,6 +182,9 @@ class MANGOS_DLL_SPEC CreatureAI
         // Called when filling loot table
         virtual bool FillLoot(Loot* loot, Player* looter) const { return false; }
 
+        // Does creature chase its target ?
+        bool IsCombatMovement() const { return m_CombatMovementEnabled; }
+
         /**
         * Check if unit is visible for MoveInLineOfSight
         * Note: This check is by default only the state-depending (visibility, range), NOT LineOfSight

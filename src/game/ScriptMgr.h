@@ -211,6 +211,26 @@ enum eScriptCommand
                                                             // datalong2 = phase_max
     SCRIPT_COMMAND_FLEE                     = 47,           // source = Creature
                                                             // datalong = seek_assistance (bool) 0 = off, 1 = on
+    SCRIPT_COMMAND_DEAL_DAMAGE              = 48,           // source = Unit
+                                                            // target = Unit
+                                                            // datalong = damage
+                                                            // datalong2 = (bool) is_percent
+    SCRIPT_COMMAND_ZONE_COMBAT_PULSE        = 49,           // source = Creature
+                                                            // datalong = (bool) initialPulse
+    SCRIPT_COMMAND_CALL_FOR_HELP            = 50,           // source = Creature
+                                                            // x = radius
+    SCRIPT_COMMAND_SET_SHEATH               = 51,           // source = Unit
+                                                            // datalong = see enum SheathState
+    SCRIPT_COMMAND_INVINCIBILITY            = 52,           // source = Creature
+                                                            // datalong = health
+                                                            // datalong2 = (bool) is_percent
+    SCRIPT_COMMAND_GAME_EVENT               = 53,           // source = None
+                                                            // datalong = event_id
+                                                            // datalong2 = (bool) start
+                                                            // datalong3 = (bool) overwrite
+    SCRIPT_COMMAND_SET_SERVER_VARIABLE      = 54,           // source = None
+                                                            // datalong = index
+                                                            // datalong2 = value
     SCRIPT_COMMAND_MAX,
 
     SCRIPT_COMMAND_DISABLED                 = 9999          // Script action was disabled during loading.
@@ -638,6 +658,43 @@ struct ScriptInfo
         {
             uint32 seekAssistance;                          // datalong
         } flee;
+
+        struct                                              // SCRIPT_COMMAND_DEAL_DAMAGE (48)
+        {
+            uint32 damage;                                  // datalong
+            uint32 isPercent;                               // datalong2
+        } dealDamage;
+
+        struct                                              // SCRIPT_COMMAND_ZONE_COMBAT_PULSE (49)
+        {
+            uint32 initialPulse;                            // datalong
+        } combatPulse;
+
+                                                            // SCRIPT_COMMAND_CALL_FOR_HELP (50)
+
+        struct                                              // SCRIPT_COMMAND_SET_SHEATH (51)
+        {
+            uint32 sheathState;                             // datalong
+        } setSheath;
+
+        struct                                              // SCRIPT_COMMAND_INVINCIBILITY (52)
+        {
+            uint32 health;                                  // datalong
+            uint32 isPercent;                               // datalong2
+        } invincibility;
+
+        struct                                              // SCRIPT_COMMAND_GAME_EVENT (53)
+        {
+            uint32 eventId;                                 // datalong
+            uint32 start;                                   // datalong2
+            uint32 overwrite;                               // datalong3
+        } gameEvent;
+
+        struct                                              // SCRIPT_COMMAND_SET_SERVER_VARIABLE (54)
+        {
+            uint32 index;                                   // datalong
+            uint32 value;                                   // datalong2
+        } serverVariable;
 
         struct
         {

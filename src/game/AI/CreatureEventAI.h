@@ -129,13 +129,8 @@ enum EventAI_ActionType
 enum EventFlags
 {
     EFLAG_REPEATABLE            = 0x01,                     //Event repeats
-    EFLAG_RESERVED_1            = 0x02,
-    EFLAG_RESERVED_2            = 0x04,
-    EFLAG_RESERVED_3            = 0x08,
-    EFLAG_RESERVED_4            = 0x10,
-    EFLAG_RANDOM_ACTION         = 0x20,                     //Event only execute one from existed actions instead each action.
-    EFLAG_RESERVED_6            = 0x40,
-    EFLAG_DEBUG_ONLY            = 0x80,                     //Event only occurs in debug build
+    EFLAG_RANDOM_ACTION         = 0x02,                     //Event only execute one from existed actions instead each action.
+    EFLAG_DEBUG_ONLY            = 0x04,                     //Event only occurs in debug build
     // no free bits, uint8 field
 };
 
@@ -632,6 +627,8 @@ class MANGOS_DLL_SPEC CreatureEventAI : public CreatureAI
         Unit* DoSelectLowestHpFriendly(float range, uint32 MinHPDiff);
         void DoFindFriendlyMissingBuff(std::list<Creature*>& _list, float range, uint32 spellid);
         void DoFindFriendlyCC(std::list<Creature*>& _list, float range);
+
+        void SetInvincibilityHealthLevel(uint32 hp_level, bool is_percent);
 
         uint8  m_Phase;                                     // Current phase, max 32 phases
 

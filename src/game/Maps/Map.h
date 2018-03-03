@@ -691,6 +691,13 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
         bool ScriptCommand_SetPhaseRandom(ScriptAction& step, Object* source, Object* target);
         bool ScriptCommand_SetPhaseRange(ScriptAction& step, Object* source, Object* target);
         bool ScriptCommand_Flee(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_DealDamage(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_ZoneCombatPulse(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_CallForHelp(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_SetSheath(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_Invincibility(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_GameEvent(ScriptAction& step, Object* source, Object* target);
+        bool ScriptCommand_ServerVariable(ScriptAction& step, Object* source, Object* target);
 
         // Add any new script command functions to the array.
         const ScriptCommandFunction m_ScriptCommands[SCRIPT_COMMAND_MAX] =
@@ -743,6 +750,13 @@ class MANGOS_DLL_SPEC Map : public GridRefManager<NGridType>, public MaNGOS::Obj
             &Map::ScriptCommand_SetPhaseRandom,         // 45
             &Map::ScriptCommand_SetPhaseRange,          // 46
             &Map::ScriptCommand_Flee,                   // 47
+            &Map::ScriptCommand_DealDamage,             // 48
+            &Map::ScriptCommand_ZoneCombatPulse,        // 49
+            &Map::ScriptCommand_CallForHelp,            // 50
+            &Map::ScriptCommand_SetSheath,              // 51
+            &Map::ScriptCommand_Invincibility,          // 52
+            &Map::ScriptCommand_GameEvent,              // 53
+            &Map::ScriptCommand_ServerVariable,         // 54
         };
 
     public:

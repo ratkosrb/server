@@ -22,6 +22,7 @@
 #include "InstanceData.h"
 #include "CreatureEventAI.h"
 #include "CreatureAIImpl.h"
+#include "GameEventMgr.h"
 
 // Script commands should return false by default.
 // If they return true the rest of the script is aborted.
@@ -1363,6 +1364,122 @@ bool Map::ScriptCommand_Flee(ScriptAction& step, Object* source, Object* target)
         pSource->DoFleeToGetAssistance();
     else
         pSource->DoFlee();
+
+    return false;
+}
+
+// SCRIPT_COMMAND_DEAL_DAMAGE (48)
+bool Map::ScriptCommand_DealDamage(ScriptAction& step, Object* source, Object* target)
+{
+    Unit* pSource = ToUnit(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_DEAL_DAMAGE (script id %u) call for a NULL or non-unit source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    Unit* pTarget = ToUnit(source);
+
+    if (!pTarget)
+    {
+        sLog.outError("SCRIPT_COMMAND_DEAL_DAMAGE (script id %u) call for a NULL or non-unit target (TypeId: %u), skipping.", step.script->id, target ? target->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    uint32 damage = step.script->dealDamage.isPercent ? pTarget->GetMaxHealth()*(step.script->dealDamage.damage / 100.0f) : step.script->dealDamage.damage;
+    pSource->DealDamage(pTarget, damage, nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_ZONE_COMBAT_PULSE (49)
+bool Map::ScriptCommand_ZoneCombatPulse(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_ZONE_COMBAT_PULSE (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    pSource->SetInCombatWithZone(step.script->combatPulse.initialPulse);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_CALL_FOR_HELP (50)
+bool Map::ScriptCommand_CallForHelp(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_CALL_FOR_HELP (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    pSource->CallForHelp(step.script->x);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_SHEATH (51)
+bool Map::ScriptCommand_SetSheath(ScriptAction& step, Object* source, Object* target)
+{
+    Unit* pSource = ToUnit(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_SET_SHEATH (script id %u) call for a NULL or non-unit source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    pSource->SetSheath(SheathState(step.script->setSheath.sheathState));
+
+    return false;
+}
+
+// SCRIPT_COMMAND_INVINCIBILITY (52)
+bool Map::ScriptCommand_Invincibility(ScriptAction& step, Object* source, Object* target)
+{
+    Creature* pSource = ToCreature(source);
+
+    if (!pSource)
+    {
+        sLog.outError("SCRIPT_COMMAND_INVINCIBILITY (script id %u) call for a NULL or non-creature source (TypeId: %u), skipping.", step.script->id, source ? source->GetTypeId() : 0);
+        return ShouldAbortScript(step);
+    }
+
+    CreatureEventAI* pAI;
+
+    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
+    {
+        sLog.outError("SCRIPT_COMMAND_INVINCIBILITY (script id %u) call for a creature not using EventAI, skipping.", step.script->id);
+        return ShouldAbortScript(step);
+    }
+
+    pAI->SetInvincibilityHealthLevel(step.script->invincibility.health, step.script->invincibility.isPercent);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_GAME_EVENT (53)
+bool Map::ScriptCommand_GameEvent(ScriptAction& step, Object* source, Object* target)
+{
+    if (step.script->gameEvent.start)
+        sGameEventMgr.StartEvent(step.script->gameEvent.eventId, step.script->gameEvent.overwrite);
+    else
+        sGameEventMgr.StopEvent(step.script->gameEvent.eventId, step.script->gameEvent.overwrite);
+
+    return false;
+}
+
+// SCRIPT_COMMAND_SET_SERVER_VARIABLE (54)
+bool Map::ScriptCommand_ServerVariable(ScriptAction& step, Object* source, Object* target)
+{
+    sObjectMgr.SetSavedVariable(step.script->serverVariable.index, step.script->serverVariable.value, true);
 
     return false;
 }

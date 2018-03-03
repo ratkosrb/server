@@ -28,6 +28,7 @@
 #include "SpellAuras.h"
 #include "ScriptLoader.h"
 #include "Conditions.h"
+#include "GameEventMgr.h"
 
 typedef std::vector<Script*> ScriptVector;
 int num_sc_scripts;
@@ -807,7 +808,7 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
             {
                 if (tmp.setPhase.phase >= 32) // Max EventAI phase.
                 {
-                    sLog.outErrorDb("Table `%s` has datalong = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE for script id %u.", tablename, tmp.setPhase.mode, tmp.id);
+                    sLog.outErrorDb("Table `%s` has datalong = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE for script id %u.", tablename, tmp.setPhase.phase, tmp.id);
                     continue;
                 }
                 if (tmp.setPhase.mode >= SO_SETPHASE_MAX)
@@ -824,7 +825,7 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
                 {
                     if (tmp.setPhaseRandom.phase[i] >= 32) // Max EventAI phase.
                     {
-                        sLog.outErrorDb("Table `%s` has datalong%u = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE_RANDOM for script id %u.", tablename, i, tmp.setPhase.mode, tmp.id);
+                        sLog.outErrorDb("Table `%s` has datalong%u = %u above maximum allowed phase in SCRIPT_COMMAND_SET_PHASE_RANDOM for script id %u.", tablename, i, tmp.setPhaseRandom.phase[i], tmp.id);
                         error = true;
                         break;
                     }
@@ -848,6 +849,52 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
                     continue;
                 }
                 break;
+            }
+            case SCRIPT_COMMAND_DEAL_DAMAGE:
+            {
+                if (tmp.dealDamage.damage == 0)
+                {
+                    sLog.outErrorDb("Table `%s` has datalong = %u in SCRIPT_COMMAND_DEAL_DAMAGE for script id %u.", tablename, tmp.dealDamage.damage, tmp.id);
+                    continue;
+                }
+                if (tmp.dealDamage.isPercent)
+                {
+                    if (tmp.dealDamage.damage > 100)
+                    {
+                        sLog.outErrorDb("Table `%s` has datalong = %u above 100% with datalong2 = %u in SCRIPT_COMMAND_DEAL_DAMAGE for script id %u.", tablename, tmp.dealDamage.damage, tmp.dealDamage.isPercent, tmp.id);
+                        continue;
+                    }
+                }
+                break;
+            }
+            case SCRIPT_COMMAND_SET_SHEATH:
+            {
+                if (tmp.setSheath.sheathState >= MAX_SHEATH_STATE)
+                {
+                    sLog.outErrorDb("Table `%s` has datalong = %u above maximum sheath state in SCRIPT_COMMAND_SET_SHEATH for script id %u.", tablename, tmp.setSheath.sheathState, tmp.id);
+                    continue;
+                }
+                break;
+            }
+            case SCRIPT_COMMAND_INVINCIBILITY:
+            {
+                if (tmp.invincibility.isPercent)
+                {
+                    if (tmp.invincibility.health > 100)
+                    {
+                        sLog.outErrorDb("Table `%s` has datalong = %u above 100% with datalong2 = %u in SCRIPT_COMMAND_INVINCIBILITY for script id %u.", tablename, tmp.invincibility.health, tmp.invincibility.isPercent, tmp.id);
+                        continue;
+                    }
+                }
+                break;
+            }
+            case SCRIPT_COMMAND_GAME_EVENT:
+            {
+                if (!sGameEventMgr.IsValidEvent(tmp.gameEvent.eventId))
+                {
+                    sLog.outErrorDb("Table `%s` has datalong = %u for a non-existing game event in SCRIPT_COMMAND_GAME_EVENT for script id %u.", tablename, tmp.gameEvent.eventId, tmp.id);
+                    continue;
+                }
             }
         }
 
