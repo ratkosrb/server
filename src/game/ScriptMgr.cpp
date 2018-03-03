@@ -42,6 +42,7 @@ ScriptMapMap sGameObjectScripts;
 ScriptMapMap sEventScripts;
 ScriptMapMap sGossipScripts;
 ScriptMapMap sCreatureMovementScripts;
+ScriptMapMap sCreatureAIScripts;
 
 INSTANTIATE_SINGLETON_1(ScriptMgr);
 
@@ -1026,6 +1027,59 @@ void ScriptMgr::LoadCreatureMovementScripts()
     // checks are done in WaypointManager::Load
 }
 
+void ScriptMgr::LoadCreatureEventAIScripts()
+{
+    LoadScripts(sCreatureAIScripts, "creature_ai_scripts");
+
+    
+    QueryResult* result;
+    Field* fields;
+
+    // Check for scripts with delay, which is not supported for this table.
+    for (uint8 i = 1; i <= 3; i++)
+    {
+        result = WorldDatabase.Query("SELECT DISTINCT id FROM creature_ai_scripts WHERE delay != 0");
+
+        if (result)
+        {
+            do
+            {
+                fields = result->Fetch();
+                uint32 scriptId = fields[0].GetUInt32();
+                sLog.outErrorDb("Table `creature_ai_scripts` has script (Id: %u) with delay!=0 but this is not supported for creature AI events.", scriptId);
+            } while (result->NextRow());
+            delete result;
+        }
+    }
+
+    // Get all script Ids referenced in creature_ai_events table.
+    std::set<uint32> actionIds;
+    for (uint8 i = 1; i <= 3; i++)
+    {
+        result = WorldDatabase.PQuery("SELECT action%u_script FROM creature_ai_events", i);
+
+        if (result)
+        {
+            do
+            {
+                fields = result->Fetch();
+                uint32 scriptId = fields[0].GetUInt32();
+                if (scriptId)
+                    actionIds.insert(scriptId);
+            } while (result->NextRow());
+            delete result;
+        }
+    }
+
+    // Then check if all scripts are in above list of used script Ids.
+    for (ScriptMapMap::const_iterator itr = sCreatureAIScripts.begin(); itr != sCreatureAIScripts.end(); ++itr)
+    {
+        std::set<uint32>::const_iterator itr2 = actionIds.find(itr->first);
+        if (itr2 == actionIds.end())
+            sLog.outErrorDb("Table `creature_ai_scripts` has script (Id: %u) not used by any creature AI events.", itr->first);
+    }
+}
+
 void ScriptMgr::CheckAllScriptTexts()
 {
     CheckScriptTexts(sQuestEndScripts);
@@ -1036,6 +1090,7 @@ void ScriptMgr::CheckAllScriptTexts()
     CheckScriptTexts(sEventScripts);
     CheckScriptTexts(sGossipScripts);
     CheckScriptTexts(sCreatureMovementScripts);
+    CheckScriptTexts(sCreatureAIScripts);
 
     sWaypointMgr.CheckTextsExistance();
 }
@@ -1873,31 +1928,11 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
             }
         }
     }
-
-    // Load all possible script entries from EventAI.
-    // Has to be done with a query because it's loaded later.
-    QueryResult* result;
-    Field* fields;
-    for (uint8 i = 1; i <= 3; i++)
-    {
-        result = WorldDatabase.PQuery("SELECT action%u_param1 FROM creature_ai_scripts WHERE action%u_type=50", i, i);
-
-        if (result)
-        {
-            do
-            {
-                fields = result->Fetch();
-                uint32 eventId = fields[0].GetUInt32();
-                if (eventId)
-                    eventIds.insert(eventId);
-            } while (result->NextRow());
-            delete result;
-        }
-    }
     
     // Load all possible script entries from SCRIPT_COMMAND_START_SCRIPT.
-    const char* script_tables[8] =
+    const char* script_tables[9] =
     {
+        "creature_ai_scripts"
         "creature_movement_scripts",
         "creature_spells_scripts",
         "event_scripts",
@@ -1908,7 +1943,10 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
         "quest_start_scripts"
     };
 
-    for (uint8 i = 0; i < 8; i++)
+    QueryResult* result;
+    Field* fields;
+
+    for (uint8 i = 0; i < 9; i++)
     {
         result = WorldDatabase.PQuery("SELECT datalong, datalong2, datalong3, datalong4 FROM %s WHERE command=39", script_tables[i]);
 
