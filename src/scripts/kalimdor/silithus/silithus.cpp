@@ -586,7 +586,7 @@ struct npc_solenorAI : public ScriptedAI
 
         if (pSpell && pSpell->Id == 14268)   // Wing Clip (Rank 3)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_CRIPPLING_CLIP, CAST_TRIGGERED) == CAST_OK)
+            if (DoCastSpellIfCan(m_creature, SPELL_CRIPPLING_CLIP, CF_TRIGGERED) == CAST_OK)
                 DoScriptText(EMOTE_IMMOBILIZED, m_creature);
         }
     }
@@ -3368,7 +3368,7 @@ struct boss_vamAI : public ScriptedAI
         if (!Enraged && Enrage_Timer < diff)
             Enraged = true;
         else if (Enraged)
-            DoCastSpellIfCan(m_creature, SPELL_ENRAGE, CAST_AURA_NOT_PRESENT);
+            DoCastSpellIfCan(m_creature, SPELL_ENRAGE, CF_AURA_NOT_PRESENT);
         else
             Enrage_Timer -= diff;
 

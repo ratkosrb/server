@@ -114,38 +114,38 @@ CanCastResult CreatureAI::DoCastSpellIfCan(Unit* pTarget, uint32 uiSpell, uint32
 
     Unit* pCaster = m_creature;
 
-    if (uiCastFlags & CAST_FORCE_TARGET_SELF)
+    if (uiCastFlags & CF_TARGET_CASTS_ON_SELF)
         pCaster = pTarget;
 
     // Allowed to cast only if not casting (unless we interrupt ourself) or if spell is triggered
-    if (!pCaster->IsNonMeleeSpellCasted(false) || uiCastFlags & (CAST_TRIGGERED | CAST_INTERRUPT_PREVIOUS))
+    if (!pCaster->IsNonMeleeSpellCasted(false) || uiCastFlags & (CF_TRIGGERED | CF_INTERRUPT_PREVIOUS))
     {
         if (const SpellEntry* pSpell = sSpellMgr.GetSpellEntry(uiSpell))
         {
-            // If cast flag CAST_AURA_NOT_PRESENT is active, check if target already has aura on them
-            if (uiCastFlags & CAST_AURA_NOT_PRESENT)
+            // If cast flag CF_AURA_NOT_PRESENT is active, check if target already has aura on them
+            if (uiCastFlags & CF_AURA_NOT_PRESENT)
             {
                 if (pTarget->HasAura(uiSpell))
                     return CAST_FAIL_TARGET_AURA;
             }
 
             // Check if cannot cast spell
-            if (!(uiCastFlags & (CAST_FORCE_TARGET_SELF | CAST_FORCE_CAST)))
+            if (!(uiCastFlags & (CF_TARGET_CASTS_ON_SELF | CF_FORCE_CAST)))
             {
-                CanCastResult castResult = CanCastSpell(pTarget, pSpell, uiCastFlags & CAST_TRIGGERED);
+                CanCastResult castResult = CanCastSpell(pTarget, pSpell, uiCastFlags & CF_TRIGGERED);
 
                 if (castResult != CAST_OK)
                     return castResult;
             }
 
             // Interrupt any previous spell
-            if ((uiCastFlags & CAST_INTERRUPT_PREVIOUS) && pCaster->IsNonMeleeSpellCasted(false))
+            if ((uiCastFlags & CF_INTERRUPT_PREVIOUS) && pCaster->IsNonMeleeSpellCasted(false))
                 pCaster->InterruptNonMeleeSpells(false);
 
-            if ((uiCastFlags & CAST_MAIN_RANGED_SPELL) && pCaster->IsMoving())
+            if ((uiCastFlags & CF_MAIN_RANGED_SPELL) && pCaster->IsMoving())
                 pCaster->StopMoving();
 
-            pCaster->CastSpell(pTarget, pSpell, uiCastFlags & CAST_TRIGGERED, nullptr, nullptr, uiOriginalCasterGUID);
+            pCaster->CastSpell(pTarget, pSpell, uiCastFlags & CF_TRIGGERED, nullptr, nullptr, uiOriginalCasterGUID);
             return CAST_OK;
         }
 
@@ -197,7 +197,7 @@ void CreatureAI::DoSpellTemplateCasts(const uint32 uiDiff)
             {
                 spell.cooldown = urand(spell.delayRepeatMin, spell.delayRepeatMax);
 
-                if (spell.castFlags & CAST_MAIN_RANGED_SPELL)
+                if (spell.castFlags & CF_MAIN_RANGED_SPELL)
                 {
                     SetCombatMovement(false);
                     SetMeleeAttack(false);
@@ -209,7 +209,7 @@ void CreatureAI::DoSpellTemplateCasts(const uint32 uiDiff)
             }
             else if (result != CAST_FAIL_IS_CASTING)
             {
-                if (spell.castFlags & CAST_MAIN_RANGED_SPELL)
+                if (spell.castFlags & CF_MAIN_RANGED_SPELL)
                 {
                     SetCombatMovement(true);
                     SetMeleeAttack(true);

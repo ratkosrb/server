@@ -772,17 +772,18 @@ extern ScriptMapMap sCreatureAIScripts;
 
 enum CastFlags
 {
-    CAST_INTERRUPT_PREVIOUS     = 0x01,                     //Interrupt any spell casting
-    CAST_TRIGGERED              = 0x02,                     //Triggered (this makes spell cost zero mana and have no cast time)
-    CAST_FORCE_CAST             = 0x04,                     //Forces cast even if creature is out of mana or out of range
-    CAST_MAIN_RANGED_SPELL      = 0x08,                     //To be used by ranged mobs only. Creature will not attempt to move until cast fails.
-    CAST_FORCE_TARGET_SELF      = 0x10,                     //Forces the target to cast this spell on itself
-    CAST_AURA_NOT_PRESENT       = 0x20,                     //Only casts the spell if the target does not have an aura from the spell
+    CF_INTERRUPT_PREVIOUS     = 0x01,                     //Interrupt any spell casting
+    CF_TRIGGERED              = 0x02,                     //Triggered (this makes spell cost zero mana and have no cast time)
+    CF_FORCE_CAST             = 0x04,                     //Forces cast even if creature is out of mana or out of range
+    CF_MAIN_RANGED_SPELL      = 0x08,                     //To be used by ranged mobs only. Creature will not attempt to move until cast fails.
+    CF_TARGET_CASTS_ON_SELF   = 0x10,                     //Forces the target to cast this spell on itself
+    CF_AURA_NOT_PRESENT       = 0x20,                     //Only casts the spell if the target does not have an aura from the spell
 };
+
+#define ALL_CAST_FLAGS (CF_INTERRUPT_PREVIOUS | CF_TRIGGERED | CF_FORCE_CAST | CF_MAIN_RANGED_SPELL | CF_TARGET_CASTS_ON_SELF | CF_AURA_NOT_PRESENT)
 
 enum Target
 {
-    //Self (m_creature)
     TARGET_T_PROVIDED_TARGET = 0,                           //Unit that was provided to the command
 
     //Hostile targets (if pet then returns pet owner)
@@ -792,7 +793,6 @@ enum Target
     TARGET_T_HOSTILE_RANDOM,                                //Just any random target on our threat list
     TARGET_T_HOSTILE_RANDOM_NOT_TOP,                        //Any random target except top threat
 
-    //Invoker targets (if pet then returns pet owner)
     TARGET_T_SELF,                                          //Self cast
 
     //Friendly targets

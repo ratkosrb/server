@@ -298,6 +298,7 @@ void CreatureEventAIMgr::LoadCreatureEventAI_Events()
             for (uint32 j = 0; j < MAX_ACTIONS; j++)
             {
                 uint32 action_script = fields[11 + j].GetUInt32();
+                temp.action[j] = nullptr;
 
                 if (action_script)
                 {

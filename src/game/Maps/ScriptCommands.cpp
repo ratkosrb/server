@@ -416,7 +416,8 @@ bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, Object* source,
         case TARGET_T_PROVIDED_TARGET:
         {
             if (Unit* pAttackTarget = ToUnit(target))
-                pCreature->AI()->AttackStart(pAttackTarget);
+                if (pCreature->AI())
+                    pCreature->AI()->AttackStart(pAttackTarget);
             break;
         }
         default:
@@ -424,7 +425,8 @@ bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, Object* source,
             if (Creature* pCreatureSummoner = pSummoner->ToCreature())
             {
                 if (Unit* pAttackTarget = GetTargetByType(pCreatureSummoner, script.summonCreature.attackTarget, nullptr))
-                    pCreature->AI()->AttackStart(pAttackTarget);
+                    if (pCreature->AI())
+                        pCreature->AI()->AttackStart(pAttackTarget);
             }
         }
     }
@@ -561,20 +563,28 @@ bool Map::ScriptCommand_CastSpell(const ScriptInfo& script, Object* source, Obje
 {
     Unit* pUnitSource = ToUnit(source);
     Unit* pUnitTarget = ToUnit(target);
-
-    if (!pUnitSource || !pUnitTarget)
+    
+    if (!pUnitSource)
     {
-        sLog.outError("SCRIPT_COMMAND_CAST_SPELL (script id %u) call for a NULL source or target, skipping.", script.id);
+        sLog.outError("SCRIPT_COMMAND_CAST_SPELL (script id %u) call for a NULL or non-unit source (TypeId: %u), skipping.", script.id, source ? source->GetTypeId() : 0);
         return ShouldAbortScript(script);
     }
 
-    if ((script.castSpell.flags & CAST_INTERRUPT_PREVIOUS) && pUnitSource->IsNonMeleeSpellCasted(false))
+    Creature* pCreatureSource = pUnitSource->ToCreature();
+
+    if (pCreatureSource)
+        pUnitTarget = GetTargetByType(pCreatureSource, script.castSpell.target, pUnitTarget, script.castSpell.spellId);
+
+    if (!pUnitTarget)
+        return ShouldAbortScript(script);
+
+    if ((script.castSpell.flags & CF_INTERRUPT_PREVIOUS) && pUnitSource->IsNonMeleeSpellCasted(false))
         pUnitSource->InterruptNonMeleeSpells(false);
 
-    if (Creature* pCreatureSource = pUnitSource->ToCreature())
-        pCreatureSource->AI()->DoCastSpellIfCan(GetTargetByType(pCreatureSource, script.castSpell.target, pUnitTarget, script.castSpell.spellId), script.castSpell.spellId, script.castSpell.flags);
+    if (pCreatureSource && pCreatureSource->AI())
+        pCreatureSource->AI()->DoCastSpellIfCan(pUnitTarget, script.castSpell.spellId, script.castSpell.flags);
     else
-        pUnitSource->CastSpell(pUnitTarget, script.castSpell.spellId, (script.castSpell.flags & CAST_TRIGGERED) != 0);
+        pUnitSource->CastSpell(pUnitTarget, script.castSpell.spellId, (script.castSpell.flags & CF_TRIGGERED) != 0);
 
     return false;
 }
@@ -867,7 +877,8 @@ bool Map::ScriptCommand_AttackStart(const ScriptInfo& script, Object* source, Ob
         return ShouldAbortScript(script);
     }
 
-    pAttacker->AI()->AttackStart(pTarget);
+    if (pAttacker->AI())
+        pAttacker->AI()->AttackStart(pTarget);
 
     return false;
 }
@@ -1225,7 +1236,9 @@ bool Map::ScriptCommand_SetMeleeAttack(const ScriptInfo& script, Object* source,
         return ShouldAbortScript(script);
     }
 
-    pSource->AI()->SetMeleeAttack(script.enableMelee.enabled);
+    if (pSource->AI())
+        pSource->AI()->SetMeleeAttack(script.enableMelee.enabled);
+
     return false;
 }
 
@@ -1240,7 +1253,9 @@ bool Map::ScriptCommand_SetCombatMovement(const ScriptInfo& script, Object* sour
         return ShouldAbortScript(script);
     }
 
-    pSource->AI()->SetCombatMovement(script.combatMovement.enabled);
+    if (pSource->AI())
+        pSource->AI()->SetCombatMovement(script.combatMovement.enabled);
+
     return false;
 }
 
@@ -1255,13 +1270,10 @@ bool Map::ScriptCommand_SetPhase(const ScriptInfo& script, Object* source, Objec
         return ShouldAbortScript(script);
     }
 
-    CreatureEventAI* pAI;
+    auto* pAI = dynamic_cast<CreatureEventAI*>(pSource->AI());
 
-    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
-    {
-        sLog.outError("SCRIPT_COMMAND_SET_PHASE (script id %u) call for a creature not using EventAI, skipping.", script.id);
+    if (!pAI)
         return ShouldAbortScript(script);
-    }
 
     uint32 uiPhase = script.setPhase.phase;
 
@@ -1302,13 +1314,10 @@ bool Map::ScriptCommand_SetPhaseRandom(const ScriptInfo& script, Object* source,
         return ShouldAbortScript(script);
     }
 
-    CreatureEventAI* pAI;
+    auto* pAI = dynamic_cast<CreatureEventAI*>(pSource->AI());
 
-    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
-    {
-        sLog.outError("SCRIPT_COMMAND_SET_PHASE_RANDOM (script id %u) call for a creature not using EventAI, skipping.", script.id);
+    if (!pAI)
         return ShouldAbortScript(script);
-    }
 
     uint32 phase1 = script.setPhaseRandom.phase[0];
     uint32 phase2 = script.setPhaseRandom.phase[1];
@@ -1336,13 +1345,10 @@ bool Map::ScriptCommand_SetPhaseRange(const ScriptInfo& script, Object* source, 
         return ShouldAbortScript(script);
     }
 
-    CreatureEventAI* pAI;
+    auto* pAI = dynamic_cast<CreatureEventAI*>(pSource->AI());
 
-    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
-    {
-        sLog.outError("SCRIPT_COMMAND_SET_PHASE_RANGE (script id %u) call for a creature not using EventAI, skipping.", script.id);
+    if (!pAI)
         return ShouldAbortScript(script);
-    }
 
     pAI->m_Phase = urand(script.setPhaseRange.phaseMin, script.setPhaseRange.phaseMax);
 
@@ -1452,13 +1458,10 @@ bool Map::ScriptCommand_Invincibility(const ScriptInfo& script, Object* source, 
         return ShouldAbortScript(script);
     }
 
-    CreatureEventAI* pAI;
+    auto* pAI = dynamic_cast<CreatureEventAI*>(pSource->AI());
 
-    if (!(pAI = dynamic_cast<CreatureEventAI*>(pSource->AI())))
-    {
-        sLog.outError("SCRIPT_COMMAND_INVINCIBILITY (script id %u) call for a creature not using EventAI, skipping.", script.id);
+    if (!pAI)
         return ShouldAbortScript(script);
-    }
 
     pAI->SetInvincibilityHealthLevel(script.invincibility.health, script.invincibility.isPercent);
 

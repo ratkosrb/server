@@ -1428,7 +1428,7 @@ struct npc_gnomish_battle_chickenAI : ScriptedPetAI
     {
         if (pDoneBy && m_bFuryReady)
         {
-            if (DoCastSpellIfCan(m_creature, SPELL_CHICKEN_FURY, CAST_TRIGGERED) == CAST_OK)
+            if (DoCastSpellIfCan(m_creature, SPELL_CHICKEN_FURY, CF_TRIGGERED) == CAST_OK)
             {
                 m_uiChickenFuryTimer = 25000;
                 m_bFuryReady = false;
@@ -1444,7 +1444,7 @@ struct npc_gnomish_battle_chickenAI : ScriptedPetAI
         {
             if (m_uiBattleSquawkTimer < uiDiff)
             {
-                if (DoCastSpellIfCan(m_creature, SPELL_BATTLE_SQUAWK, CAST_TRIGGERED) == CAST_OK)
+                if (DoCastSpellIfCan(m_creature, SPELL_BATTLE_SQUAWK, CF_TRIGGERED) == CAST_OK)
                     m_bSquawkDone = true;
             }
             else
@@ -1703,7 +1703,7 @@ struct npc_the_cleanerAI : public ScriptedAI
 
     void Reset()
     {
-        DoCastSpellIfCan(m_creature, SPELL_IMMUNITY, CAST_TRIGGERED);
+        DoCastSpellIfCan(m_creature, SPELL_IMMUNITY, CF_TRIGGERED);
         m_uiDespawnTimer = 3000;
     }
 
@@ -2379,7 +2379,7 @@ struct npc_shahramAI : ScriptedPetAI
                 }
             }
 
-            if (shahramSpell && DoCastSpellIfCan(m_creature, shahramSpell, CAST_TRIGGERED) == CAST_OK)
+            if (shahramSpell && DoCastSpellIfCan(m_creature, shahramSpell, CF_TRIGGERED) == CAST_OK)
             {
                 if (!hasCastDebuff)
                     hasCastDebuff = true;

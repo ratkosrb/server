@@ -208,7 +208,7 @@ struct boss_kriAI : public boss_bug_trioAI
     void JustDied(Unit* pKiller) override
     {
         // Spawn Poison Cloud on death
-        DoCastSpellIfCan(m_creature, SPELL_SUMMON_CLOUD, CAST_TRIGGERED);
+        DoCastSpellIfCan(m_creature, SPELL_SUMMON_CLOUD, CF_TRIGGERED);
         boss_bug_trioAI::JustDied(pKiller);
     }
 
@@ -364,7 +364,7 @@ struct boss_vemAI : public boss_bug_trioAI
     void JustDied(Unit* pKiller) override
     {
         // Enrage the other bugs on death
-        DoCastSpellIfCan(m_creature, SPELL_VENGEANCE, CAST_TRIGGERED);
+        DoCastSpellIfCan(m_creature, SPELL_VENGEANCE, CF_TRIGGERED);
         boss_bug_trioAI::JustDied(pKiller);
     }
 

@@ -480,12 +480,15 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
                                     tablename, tmp.castSpell.spellId, tmp.id);
                     continue;
                 }
-                if (tmp.castSpell.flags & ~0x3)
+                if (tmp.castSpell.flags & ~ALL_CAST_FLAGS)
                 {
-                    sLog.outErrorDb("Table `%s` using unknown flags in datalong2 (%u)i n SCRIPT_COMMAND_CAST_SPELL for script id %u",
+                    sLog.outErrorDb("Table `%s` using unknown flags in datalong2 (%u) in SCRIPT_COMMAND_CAST_SPELL for script id %u",
                                     tablename, tmp.castSpell.flags, tmp.id);
                     continue;
                 }
+                // Cast is always triggered if target is forced to cast on self
+                if (tmp.castSpell.flags & CF_TARGET_CASTS_ON_SELF)
+                    tmp.castSpell.flags |= CF_TRIGGERED;
                 break;
             }
             case SCRIPT_COMMAND_REMOVE_ITEM:
@@ -1932,7 +1935,7 @@ void ScriptMgr::CollectPossibleEventIds(std::set<uint32>& eventIds)
     // Load all possible script entries from SCRIPT_COMMAND_START_SCRIPT.
     const char* script_tables[9] =
     {
-        "creature_ai_scripts"
+        "creature_ai_scripts",
         "creature_movement_scripts",
         "creature_spells_scripts",
         "event_scripts",
