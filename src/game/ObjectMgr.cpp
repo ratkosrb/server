@@ -263,7 +263,7 @@ void ObjectMgr::ConvertEventActions()
             if (!(event_flags & EFLAG_RANDOM_ACTION))
             {
                 myfile << "UPDATE `creature_ai_events` SET `action1_script`=" << id << " WHERE `id`=" << id << ";\n";
-                myfile << "INSERT INTO `creature_ai_actions` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
+                myfile << "INSERT INTO `creature_ai_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
             }
             
             for (int i = 0; i < actions.size(); i++)
@@ -802,7 +802,7 @@ void ObjectMgr::ConvertEventActions()
                 uint32 script_id = (event_flags & EFLAG_RANDOM_ACTION) ? id + 20 + i : id;
 
                 if (event_flags & EFLAG_RANDOM_ACTION)
-                    myfile << "INSERT INTO `creature_ai_actions` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES ";
+                    myfile << "INSERT INTO `creature_ai_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES ";
 
                 myfile << "(" << script_id << ", " << delay << ", " << command << ", " << datalong << ", " << datalong2 << ", " << datalong3 << ", " << datalong4 << ", " << buddy_id << ", " << buddy_radius << ", " << buddy_type << ", " << data_flags << ", " << dataint << ", " << dataint2 << ", " << dataint3 << ", " << dataint4 << ", " << x << ", " << y << ", " << z << ", " << o << ", " << condition_id << ", '" << action_comment << "')";
                 
