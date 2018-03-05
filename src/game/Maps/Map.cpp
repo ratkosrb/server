@@ -2182,7 +2182,7 @@ void BattleGroundMap::UnloadAll(bool pForce)
 }
 
 /// Put scripts in the execution queue
-void Map::ScriptsStart(ScriptMapMap const& scripts, uint32 id, Object* source, Object* target)
+void Map::ScriptsStart(ScriptMapMap const& scripts, uint32 id, WorldObject* source, WorldObject* target)
 {
     ///- Find the script map
     ScriptMapMap::const_iterator s = scripts.find(id);
@@ -2192,7 +2192,6 @@ void Map::ScriptsStart(ScriptMapMap const& scripts, uint32 id, Object* source, O
     // prepare static data
     ObjectGuid sourceGuid = source->GetObjectGuid();
     ObjectGuid targetGuid = target ? target->GetObjectGuid() : ObjectGuid();
-    ObjectGuid ownerGuid  = source->isType(TYPEMASK_ITEM) ? ((Item*)source)->GetOwnerGuid() : ObjectGuid();
 
     ///- Schedule script execution for all scripts in the script map
     ScriptMap const *s2 = &(s->second);
@@ -2203,7 +2202,6 @@ void Map::ScriptsStart(ScriptMapMap const& scripts, uint32 id, Object* source, O
         ScriptAction sa;
         sa.sourceGuid = sourceGuid;
         sa.targetGuid = targetGuid;
-        sa.ownerGuid  = ownerGuid;
 
         sa.script = &iter->second;
         m_scriptSchedule.insert(ScriptScheduleMap::value_type(time_t(sWorld.GetGameTime() + iter->first), sa));
@@ -2215,19 +2213,17 @@ void Map::ScriptsStart(ScriptMapMap const& scripts, uint32 id, Object* source, O
     m_scriptSchedule_lock.release();
 }
 
-void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, Object* source, Object* target)
+void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, WorldObject* source, WorldObject* target)
 {
     // NOTE: script record _must_ exist until command executed
 
     // prepare static data
     ObjectGuid sourceGuid = source->GetObjectGuid();
     ObjectGuid targetGuid = target ? target->GetObjectGuid() : ObjectGuid();
-    ObjectGuid ownerGuid  = source->isType(TYPEMASK_ITEM) ? ((Item*)source)->GetOwnerGuid() : ObjectGuid();
 
     ScriptAction sa;
     sa.sourceGuid = sourceGuid;
     sa.targetGuid = targetGuid;
-    sa.ownerGuid  = ownerGuid;
 
     sa.script = &script;
     m_scriptSchedule_lock.acquire();
@@ -2236,27 +2232,20 @@ void Map::ScriptCommandStart(ScriptInfo const& script, uint32 delay, Object* sou
     m_scriptSchedule_lock.release();
 }
 
-void Map::ScriptCommandStartDirect(const ScriptInfo& script, Object* source, Object* target)
+void Map::ScriptCommandStartDirect(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     if ((script.command != SCRIPT_COMMAND_DISABLED) && 
         FindScriptFinalTargets(source, target, script) && 
-        (!script.condition || sObjectMgr.IsConditionSatisfied(script.condition, ToWorldObject(target), this, ToWorldObject(source), CONDITION_FROM_DBSCRIPTS)))
+        (!script.condition || sObjectMgr.IsConditionSatisfied(script.condition, target, this, source, CONDITION_FROM_DBSCRIPTS)))
         (this->*(m_ScriptCommands[script.command]))(script, source, target);
 }
 
-bool Map::FindScriptInitialTargets(Object*& source, Object*& target, const ScriptAction& step)
+bool Map::FindScriptInitialTargets(WorldObject*& source, WorldObject*& target, const ScriptAction& step)
 {
     if (step.sourceGuid)
     {
         switch (step.sourceGuid.GetHigh())
         {
-            case HIGHGUID_ITEM:
-            {
-                // case HIGHGUID_CONTAINER: ==HIGHGUID_ITEM
-                if (Player* player = HashMapHolder<Player>::Find(step.ownerGuid))
-                    source = player->GetItemByGuid(step.sourceGuid);
-                break;
-            }
             case HIGHGUID_UNIT:
                 source = GetCreature(step.sourceGuid);
                 break;
@@ -2312,110 +2301,138 @@ bool Map::FindScriptInitialTargets(Object*& source, Object*& target, const Scrip
     return true;
 }
 
-bool Map::FindScriptFinalTargets(Object*& source, Object*& target, const ScriptInfo& script)
+bool Map::FindScriptFinalTargets(WorldObject*& source, WorldObject*& target, const ScriptInfo& script)
 {
     // we swap target and source if data_flags & 0x1
     if (script.raw.data[4] & SF_GENERAL_SWAP_INITIAL_TARGETS)
         std::swap(source, target);
 
     // If we have a buddy lets find it.
-    if (script.buddy_id)
+    if (script.target_type)
     {
-        Object* pBuddy = nullptr;
-        switch (script.buddy_type)
+        switch (script.target_type)
         {
-        case BUDDY_TYPE_CREATURE_ENTRY:
-        {
-            if (WorldObject* pSource = ToWorldObject(source))
+            case TARGET_T_CREATURE_WITH_ENTRY:
             {
+                if (!source)
+                {
+                    sLog.outError("FindScriptTargets: Attempt to search for nearby creature in script with id %u but source is a NULL object.", script.id);
+                    return false;
+                }
+
                 Creature* pCreatureBuddy = nullptr;
 
-                MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*pSource, script.buddy_id, true, script.buddy_radius);
+                MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*source, script.target_param1, true, script.target_param2);
                 MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(pCreatureBuddy, u_check);
 
-                Cell::VisitGridObjects(pSource, searcher, script.buddy_radius);
+                Cell::VisitGridObjects(source, searcher, script.target_param2);
 
                 if (pCreatureBuddy)
-                    pBuddy = pCreatureBuddy;
+                    target = pCreatureBuddy;
+                else
+                {
+                    sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (target_param1: %u), (target_param2: %u), (target_type: %u).", script.id, script.target_param1, script.target_param2, script.target_type);
+                    return false;
+                }
+                break;
             }
-            else
-                sLog.outError("FindScriptTargets: Attempt to search for nearby creature in script with id %u but source is not a world object.", script.id);
-            break;
-        }
-        case BUDDY_TYPE_CREATURE_GUID:
-        {
-            const CreatureData* pCreatureData = sObjectMgr.GetCreatureData(script.buddy_id);
-            if (pCreatureData)
+            case TARGET_T_CREATURE_WITH_GUID:
             {
-                Creature* pCreatureBuddy = this->GetCreature(ObjectGuid(HIGHGUID_UNIT, pCreatureData->id, script.buddy_id));
+                const CreatureData* pCreatureData = sObjectMgr.GetCreatureData(script.target_param1);
+                if (pCreatureData)
+                {
+                    Creature* pCreatureBuddy = this->GetCreature(ObjectGuid(HIGHGUID_UNIT, pCreatureData->id, script.target_param1));
 
-                if (pCreatureBuddy)
-                    pBuddy = pCreatureBuddy;
+                    if (pCreatureBuddy)
+                        target = pCreatureBuddy;
+                    else
+                    {
+                        sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (target_param1: %u), (target_param2: %u), (target_type: %u).", script.id, script.target_param1, script.target_param2, script.target_type);
+                        return false;
+                    }
+                }
+                break;
             }
-            break;
-        }
-        case BUDDY_TYPE_CREATURE_INSTANCE_DATA:
-        {
-            InstanceData* pInstanceData = this->GetInstanceData();
-            if (pInstanceData)
+            case TARGET_T_CREATURE_FROM_INSTANCE_DATA:
             {
-                Creature* pCreatureBuddy = pInstanceData->GetCreature(pInstanceData->GetData64(script.buddy_id));
+                InstanceData* pInstanceData = this->GetInstanceData();
+                if (pInstanceData)
+                {
+                    Creature* pCreatureBuddy = pInstanceData->GetCreature(pInstanceData->GetData64(script.target_param1));
 
-                if (pCreatureBuddy)
-                    pBuddy = pCreatureBuddy;
+                    if (pCreatureBuddy)
+                        target = pCreatureBuddy;
+                    else
+                    {
+                        sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (target_param1: %u), (target_param2: %u), (target_type: %u).", script.id, script.target_param1, script.target_param2, script.target_type);
+                        return false;
+                    }
+                }
+                break;
             }
-            break;
-        }
-        case BUDDY_TYPE_GAMEOBJECT_ENTRY:
-        {
-            if (WorldObject* pSource = ToWorldObject(source))
+            case TARGET_T_GAMEOBJECT_WITH_ENTRY:
             {
+                if (!source)
+                {
+                    sLog.outError("FindScriptTargets: Attempt to search for nearby gameobject in script with id %u but source is a NULL object.", script.id);
+                    return false;
+                }
+
                 GameObject* pGameObjectBuddy = nullptr;
 
-                MaNGOS::NearestGameObjectEntryInObjectRangeCheck u_check(*pSource, script.buddy_id, script.buddy_radius);
+                MaNGOS::NearestGameObjectEntryInObjectRangeCheck u_check(*source, script.target_param1, script.target_param2);
                 MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> searcher(pGameObjectBuddy, u_check);
 
-                Cell::VisitGridObjects(pSource, searcher, script.buddy_radius);
+                Cell::VisitGridObjects(source, searcher, script.target_param2);
 
                 if (pGameObjectBuddy)
-                    pBuddy = pGameObjectBuddy;
+                    target = pGameObjectBuddy;
+                else
+                {
+                    sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (target_param1: %u), (target_param2: %u), (target_type: %u).", script.id, script.target_param1, script.target_param2, script.target_type);
+                    return false;
+                }
+                break;
             }
-            else
-                sLog.outError("FindScriptTargets: Attempt to search for nearby gameobject in script with id %u but source is not a world object.", script.id);
-            break;
-        }
-        case BUDDY_TYPE_GAMEOBJECT_GUID:
-        {
-            GameObjectData const* pGameObjectData = sObjectMgr.GetGOData(script.buddy_id);
-            if (pGameObjectData)
+            case TARGET_T_GAMEOBJECT_WITH_GUID:
             {
-                GameObject* pGameObjectBuddy = this->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, pGameObjectData->id, script.buddy_id));
+                GameObjectData const* pGameObjectData = sObjectMgr.GetGOData(script.target_param1);
+                if (pGameObjectData)
+                {
+                    GameObject* pGameObjectBuddy = this->GetGameObject(ObjectGuid(HIGHGUID_GAMEOBJECT, pGameObjectData->id, script.target_param1));
 
-                if (pGameObjectBuddy)
-                    pBuddy = pGameObjectBuddy;
+                    if (pGameObjectBuddy)
+                        target = pGameObjectBuddy;
+                    else
+                    {
+                        sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (target_param1: %u), (target_param2: %u), (target_type: %u).", script.id, script.target_param1, script.target_param2, script.target_type);
+                        return false;
+                    }
+                }
+                break;
             }
-            break;
-        }
-        case BUDDY_TYPE_GAMEOBJECT_INSTANCE_DATA:
-        {
-            InstanceData* pInstanceData = this->GetInstanceData();
-            if (pInstanceData)
+            case TARGET_T_GAMEOBJECT_FROM_INSTANCE_DATA:
             {
-                GameObject* pGameObjectBuddy = pInstanceData->GetGameObject(pInstanceData->GetData64(script.buddy_id));
+                InstanceData* pInstanceData = this->GetInstanceData();
+                if (pInstanceData)
+                {
+                    GameObject* pGameObjectBuddy = pInstanceData->GetGameObject(pInstanceData->GetData64(script.target_param1));
 
-                if (pGameObjectBuddy)
-                    pBuddy = pGameObjectBuddy;
+                    if (pGameObjectBuddy)
+                        target = pGameObjectBuddy;
+                    else
+                    {
+                        sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (target_param1: %u), (target_param2: %u), (target_type: %u).", script.id, script.target_param1, script.target_param2, script.target_type);
+                        return false;
+                    }
+                }
+                break;
             }
-            break;
-        }
-        }
-
-        if (pBuddy)
-            source = pBuddy;
-        else
-        {
-            sLog.outError("FindScriptTargets: Failed to find buddy for script with id %u (buddy_id: %u), (buddy_radius: %u), (buddy_type: %u).", script.id, script.buddy_id, script.buddy_radius, script.buddy_type);
-            return false;
+            default:
+            {
+                target = GetTargetByType(source, target, script.target_type, script.target_param1, script.target_param2);
+                break;
+            }
         }
     }
 
@@ -2435,7 +2452,7 @@ void Map::TerminateScript(const ScriptAction& step)
 {
     for (auto rmItr = m_scriptSchedule.begin(); rmItr != m_scriptSchedule.end();)
     {
-        if (rmItr->second.IsSameScript(step.script->id, step.sourceGuid, step.targetGuid, step.ownerGuid))
+        if (rmItr->second.IsSameScript(step.script->id, step.sourceGuid, step.targetGuid))
         {
             m_scriptSchedule.erase(rmItr++);
             sScriptMgr.DecreaseScheduledScriptCount();
@@ -2463,13 +2480,13 @@ void Map::ScriptsProcess()
         const ScriptAction step = iter->second;
         m_scriptSchedule_lock.release();
 
-        Object* source = nullptr;
-        Object* target = nullptr;
+        WorldObject* source = nullptr;
+        WorldObject* target = nullptr;
 
         bool scriptResultOk = (step.script->command != SCRIPT_COMMAND_DISABLED) &&
                               FindScriptInitialTargets(source, target, step) &&
                               FindScriptFinalTargets(source, target, *step.script) &&
-                              (!step.script->condition || sObjectMgr.IsConditionSatisfied(step.script->condition, ToWorldObject(target), this, ToWorldObject(source), CONDITION_FROM_DBSCRIPTS));
+                              (!step.script->condition || sObjectMgr.IsConditionSatisfied(step.script->condition, target, this, source, CONDITION_FROM_DBSCRIPTS));
 
         if (scriptResultOk)
             scriptResultOk = (this->*(m_ScriptCommands[step.script->command]))(*step.script, source, target);

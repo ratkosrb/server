@@ -66,7 +66,7 @@ ScriptMgr::~ScriptMgr()
 void ScriptMgr::DisableScriptAction(ScriptInfo& script)
 {
     script.command = SCRIPT_COMMAND_DISABLED;
-    script.buddy_id = 0;
+    script.target_param1 = 0;
     script.condition = 0;
 }
 
@@ -80,7 +80,7 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
     scripts.clear();                                        // need for reload support
 
     //                                                  0    1       2         3         4          5          6         7           8             9          10        11        12        13        14    15 16 17 18       19
-    QueryResult *result = WorldDatabase.PQuery("SELECT id, delay, command, datalong, datalong2, datalong3, datalong4, buddy_id, buddy_radius, buddy_type, data_flags, dataint, dataint2, dataint3, dataint4, x, y, z, o, condition_id FROM %s", tablename);
+    QueryResult *result = WorldDatabase.PQuery("SELECT id, delay, command, datalong, datalong2, datalong3, datalong4, target_param1, target_param2, target_type, data_flags, dataint, dataint2, dataint3, dataint4, x, y, z, o, condition_id FROM %s", tablename);
 
     uint32 count = 0;
 
@@ -110,9 +110,9 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
         tmp.raw.data[2]  = fields[5].GetUInt32();
         tmp.raw.data[3]  = fields[6].GetUInt32();
 
-        tmp.buddy_id     = fields[7].GetUInt32();
-        tmp.buddy_radius = fields[8].GetUInt32();
-        tmp.buddy_type   = fields[9].GetUInt8();
+        tmp.target_param1     = fields[7].GetUInt32();
+        tmp.target_param2 = fields[8].GetUInt32();
+        tmp.target_type   = fields[9].GetUInt8();
 
         tmp.raw.data[4]  = fields[10].GetUInt32();
         tmp.raw.data[5]  = fields[11].GetInt32();
@@ -131,36 +131,36 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
             continue;
         }
 
-        if (tmp.buddy_id)
+        if (tmp.target_param1)
         {
-            switch (tmp.buddy_type)
+            switch (tmp.target_type)
             {
-                case BUDDY_TYPE_CREATURE_ENTRY:
+                case TARGET_T_CREATURE_WITH_ENTRY:
                 {
-                    if (!ObjectMgr::GetCreatureTemplate(tmp.buddy_id))
+                    if (!ObjectMgr::GetCreatureTemplate(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingCreatureId(tmp.buddy_id))
+                        if (!sObjectMgr.IsExistingCreatureId(tmp.target_param1))
                         {
-                            sLog.outErrorDb("Table `%s` has buddy_id = %u for script id %u, but this creature_template does not exist.", tablename, tmp.buddy_id, tmp.id);
+                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this creature_template does not exist.", tablename, tmp.target_param1, tmp.id);
                             continue;
                         }
                         else
                             DisableScriptAction(tmp);
                     }
-                    if (!tmp.buddy_radius)
+                    if (!tmp.target_param2)
                     {
-                        sLog.outErrorDb("Table `%s` has buddy_id = %u for script id %u, but search radius is too small (buddy_radius = %u).", tablename, tmp.buddy_id, tmp.id, tmp.buddy_radius);
+                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but search radius is too small (target_param2 = %u).", tablename, tmp.target_param1, tmp.id, tmp.target_param2);
                         continue;
                     }
                     break;
                 }
-                case BUDDY_TYPE_CREATURE_GUID:
+                case TARGET_T_CREATURE_WITH_GUID:
                 {
-                    if (!sObjectMgr.GetCreatureData(tmp.buddy_id))
+                    if (!sObjectMgr.GetCreatureData(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingCreatureGuid(tmp.buddy_id))
+                        if (!sObjectMgr.IsExistingCreatureGuid(tmp.target_param1))
                         {
-                            sLog.outErrorDb("Table `%s` has buddy_id = %u for script id %u, but this creature guid does not exist.", tablename, tmp.buddy_id, tmp.id);
+                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this creature guid does not exist.", tablename, tmp.target_param1, tmp.id);
                             continue;
                         }
                         else
@@ -168,13 +168,13 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
                     }
                     break;
                 }
-                case BUDDY_TYPE_GAMEOBJECT_ENTRY:
+                case TARGET_T_GAMEOBJECT_WITH_ENTRY:
                 {
-                    if (!ObjectMgr::GetGameObjectInfo(tmp.buddy_id))
+                    if (!ObjectMgr::GetGameObjectInfo(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingGameObjectId(tmp.buddy_id))
+                        if (!sObjectMgr.IsExistingGameObjectId(tmp.target_param1))
                         {
-                            sLog.outErrorDb("Table `%s` has buddy_id = %u for script id %u, but this gameobject_template does not exist.", tablename, tmp.buddy_id, tmp.id);
+                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this gameobject_template does not exist.", tablename, tmp.target_param1, tmp.id);
                             continue;
                         }
                         else
@@ -182,14 +182,14 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
                     }
                     break;
                 }
-                case BUDDY_TYPE_GAMEOBJECT_GUID:
+                case TARGET_T_GAMEOBJECT_WITH_GUID:
                 {
-                    GameObjectData const* data = sObjectMgr.GetGOData(tmp.buddy_id);
+                    GameObjectData const* data = sObjectMgr.GetGOData(tmp.target_param1);
                     if (!data)
                     {
-                        if (!sObjectMgr.IsExistingGameObjectGuid(tmp.buddy_id))
+                        if (!sObjectMgr.IsExistingGameObjectGuid(tmp.target_param1))
                         {
-                            sLog.outErrorDb("Table `%s` has buddy_id = %u for script id %u, but this gameobject guid does not exist.", tablename, tmp.buddy_id, tmp.id);
+                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this gameobject guid does not exist.", tablename, tmp.target_param1, tmp.id);
                             continue;
                         }
                         else
@@ -203,23 +203,23 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
                     GameObjectInfo const* info = ObjectMgr::GetGameObjectInfo(data->id);
                     if (!info)
                     {
-                        sLog.outErrorDb("Table `%s` has buddy_id = %u for script id %u, but this guid is for a non-existent gameobject entry %u.", tablename, tmp.buddy_id, tmp.id, data->id);
+                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this guid is for a non-existent gameobject entry %u.", tablename, tmp.target_param1, tmp.id, data->id);
                         continue;
                     }
                     break;
                 }
-                case BUDDY_TYPE_CREATURE_INSTANCE_DATA:
-                case BUDDY_TYPE_GAMEOBJECT_INSTANCE_DATA:
+                case TARGET_T_CREATURE_FROM_INSTANCE_DATA:
+                case TARGET_T_GAMEOBJECT_FROM_INSTANCE_DATA:
                     break;
                 default:
                 {
-                    sLog.outError("Table `%s` has an unknown buddy_type = %u used for script id %u.", tablename, tmp.buddy_type, tmp.id);
+                    sLog.outError("Table `%s` has an unknown target_type = %u used for script id %u.", tablename, tmp.target_type, tmp.id);
                     break;
                 }
             }
         }
 
-        if (!tmp.buddy_id && (tmp.raw.data[4] & SF_GENERAL_SWAP_INITIAL_TARGETS) && (tmp.raw.data[4] & SF_GENERAL_SWAP_FINAL_TARGETS))
+        if (!tmp.target_type && (tmp.raw.data[4] & SF_GENERAL_SWAP_INITIAL_TARGETS) && (tmp.raw.data[4] & SF_GENERAL_SWAP_FINAL_TARGETS))
         {
             sLog.outErrorDb("Table `%s` has nonsensical flag combination (data_flags = %u) without a buddy for script id %u", tablename, tmp.moveTo.flags, tmp.id);
             continue;

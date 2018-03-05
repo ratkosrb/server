@@ -420,7 +420,7 @@ void CreatureEventAI::ProcessAction(ScriptMap* action, uint32 EventId, Unit* pAc
     if (!action)
         return;
 
-    Object* target = pActionInvoker ? pActionInvoker : m_creature->getVictim();
+    WorldObject* target = pActionInvoker ? pActionInvoker : m_creature->getVictim();
     Map* map = m_creature->GetMap();
 
     for (const auto& x : *action)

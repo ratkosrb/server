@@ -117,7 +117,6 @@ enum eScriptCommand
                                                             // target = Unit
                                                             // datalong = spell_id
                                                             // datalong2 = eCastSpellFlags
-                                                            // datalong3 = target
     SCRIPT_COMMAND_PLAY_SOUND               = 16,           // source = WorldObject
                                                             // target = Player/None
                                                             // datalong = sound_id
@@ -344,17 +343,6 @@ enum eSetPhaseOptions
     SO_SETPHASE_MAX
 };
 
-// Values used in buddy_type column
-enum eBuddyType
-{
-    BUDDY_TYPE_CREATURE_ENTRY           = 0,
-    BUDDY_TYPE_CREATURE_GUID            = 1,
-    BUDDY_TYPE_CREATURE_INSTANCE_DATA   = 2,
-    BUDDY_TYPE_GAMEOBJECT_ENTRY         = 3,
-    BUDDY_TYPE_GAMEOBJECT_GUID          = 4,
-    BUDDY_TYPE_GAMEOBJECT_INSTANCE_DATA = 5,
-};
-
 enum eDataFlags
 {
     SF_GENERAL_SWAP_INITIAL_TARGETS = 0x1,                  // Swaps the provided source and target, before buddy is checked.
@@ -479,7 +467,6 @@ struct ScriptInfo
         {
             uint32 spellId;                                 // datalong
             uint32 flags;                                   // datalong2
-            uint32 target;                                  // datalong3
         } castSpell;
 
         struct                                              // SCRIPT_COMMAND_PLAY_SOUND (16)
@@ -702,16 +689,16 @@ struct ScriptInfo
         } raw;
     };
 
-    uint32 buddy_id;
-    uint32 buddy_radius;
-    uint8 buddy_type;
+    uint32 target_param1;
+    uint32 target_param2;
+    uint8 target_type;
 
     float x;
     float y;
     float z;
     float o;
 
-    ScriptInfo() : id(0), delay(0), command(0), condition(0), buddy_id(0), buddy_radius(0), buddy_type(0), x(0), y(0), z(0), o(0)
+    ScriptInfo() : id(0), delay(0), command(0), condition(0), target_param1(0), target_param2(0), target_type(0), x(0), y(0), z(0), o(0)
     {
         memset(raw.data, 0, sizeof(raw.data));
     }
@@ -733,15 +720,13 @@ struct ScriptAction
 {
     ObjectGuid sourceGuid;
     ObjectGuid targetGuid;
-    ObjectGuid ownerGuid;                                   // owner of source if source is item
     ScriptInfo const* script;                               // pointer to static script data
 
-    bool IsSameScript(uint32 id, ObjectGuid sourceGuid, ObjectGuid targetGuid, ObjectGuid ownerGuid) const
+    bool IsSameScript(uint32 id, ObjectGuid sourceGuid, ObjectGuid targetGuid) const
     {
         return id == script->id &&
             (sourceGuid == this->sourceGuid || !sourceGuid) &&
-            (targetGuid == this->targetGuid || !targetGuid) &&
-            (ownerGuid == this->ownerGuid || !ownerGuid);
+            (targetGuid == this->targetGuid || !targetGuid);
     }
 };
 
@@ -775,33 +760,109 @@ enum CastFlags
     CF_INTERRUPT_PREVIOUS     = 0x01,                     //Interrupt any spell casting
     CF_TRIGGERED              = 0x02,                     //Triggered (this makes spell cost zero mana and have no cast time)
     CF_FORCE_CAST             = 0x04,                     //Forces cast even if creature is out of mana or out of range
-    CF_MAIN_RANGED_SPELL      = 0x08,                     //To be used by ranged mobs only. Creature will not attempt to move until cast fails.
+    CF_MAIN_RANGED_SPELL      = 0x08,                     //To be used by ranged mobs only. Creature will not chase target until cast fails.
     CF_TARGET_CASTS_ON_SELF   = 0x10,                     //Forces the target to cast this spell on itself
     CF_AURA_NOT_PRESENT       = 0x20,                     //Only casts the spell if the target does not have an aura from the spell
 };
 
 #define ALL_CAST_FLAGS (CF_INTERRUPT_PREVIOUS | CF_TRIGGERED | CF_FORCE_CAST | CF_MAIN_RANGED_SPELL | CF_TARGET_CASTS_ON_SELF | CF_AURA_NOT_PRESENT)
 
-enum Target
+// Values used in target_type column
+enum ScriptTarget
 {
-    TARGET_T_PROVIDED_TARGET = 0,                           //Unit that was provided to the command
+    TARGET_T_PROVIDED_TARGET = 0,                           //Object that was provided to the command
 
-    //Hostile targets (if pet then returns pet owner)
     TARGET_T_HOSTILE,                                       //Our current target (ie: highest aggro)
     TARGET_T_HOSTILE_SECOND_AGGRO,                          //Second highest aggro (generaly used for cleaves and some special attacks)
     TARGET_T_HOSTILE_LAST_AGGRO,                            //Dead last on aggro (no idea what this could be used for)
     TARGET_T_HOSTILE_RANDOM,                                //Just any random target on our threat list
     TARGET_T_HOSTILE_RANDOM_NOT_TOP,                        //Any random target except top threat
 
-    TARGET_T_SELF,                                          //Self cast
+    TARGET_T_SELF,                                          //The provided source
+    TARGET_T_OWNER,                                         //The owner of the source
+    TARGET_T_OWNER_OR_SELF,                                 //Either self or owner if pet or controlled
 
-    //Friendly targets
+    TARGET_T_CREATURE_WITH_ENTRY,                           //Searches for nearby creature with the given entry
+                                                            //Param1 = creature_entry
+                                                            //Param2 = search_radius
+
+    TARGET_T_CREATURE_WITH_GUID,                            //The creature with this database guid
+                                                            //Param1 = db_guid
+
+    TARGET_T_CREATURE_FROM_INSTANCE_DATA,                   //Find creature by guid stored in instance data
+                                                            //Param1 = instance_data_field
+
+    TARGET_T_GAMEOBJECT_WITH_ENTRY,                         //Searches for nearby gameobject with the given entry
+                                                            //Param1 = gameobject_entry
+                                                            //Param2 = search_radius
+
+    TARGET_T_GAMEOBJECT_WITH_GUID,                          //The gameobject with this database guid
+                                                            //Param1 = db_guid
+
+    TARGET_T_GAMEOBJECT_FROM_INSTANCE_DATA,                 //Find gameobject by guid stored in instance data
+                                                            //Param1 = instance_data_field
+
     TARGET_T_FRIENDLY,                                      //Random friendly unit.
-    TARGET_T_FRIENDLY_NOT_SELF,                             //Random friendly unit but not self.
+                                                            //Param1 = spell_id (for range check)
+                                                            //Param2 = (bool) exclude_self
+
     TARGET_T_FRIENDLY_INJURED,                              //Friendly unit missing the most health.
+                                                            //Param1 = spell_id (for range check)
+                                                            //Param2 = hp_percent
 
     TARGET_T_END
 };
+
+//Generic scripting functions
+void DoScriptText(int32 textEntry, WorldObject* pSource, Unit* target = nullptr, uint32 chatTypeOverride = 0);
+void DoOrSimulateScriptTextForMap(int32 iTextEntry, uint32 uiCreatureEntry, Map* pMap, Creature* pCreatureSource = nullptr, Unit* pTarget = nullptr);
+
+// Returns a target based on the type specified.
+inline WorldObject* GetTargetByType(WorldObject* pSource, WorldObject* pTarget, uint8 TargetType, uint32 Param1 = 0u, uint32 Param2 = 0u)
+{
+    switch (TargetType)
+    {
+        case TARGET_T_PROVIDED_TARGET:
+            return pTarget;
+        case TARGET_T_HOSTILE:
+            if (Unit* pUnitSource = ToUnit(pSource))
+                return pUnitSource->getVictim();
+            break;
+        case TARGET_T_HOSTILE_SECOND_AGGRO:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 1);
+            break;
+        case TARGET_T_HOSTILE_LAST_AGGRO:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO, 0);
+            break;
+        case TARGET_T_HOSTILE_RANDOM:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
+            break;
+        case TARGET_T_HOSTILE_RANDOM_NOT_TOP:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
+            break;
+        case TARGET_T_SELF:
+            return pSource;
+        case TARGET_T_OWNER:
+            if (Unit* pUnitSource = ToUnit(pSource))
+                return pUnitSource->GetOwner();
+            break;
+        case TARGET_T_OWNER_OR_SELF:
+            if (Unit* pUnitSource = ToUnit(pSource))
+                return pUnitSource->GetCharmerOrOwnerOrSelf();
+            break;
+        case TARGET_T_FRIENDLY:
+            if (Unit* pUnitSource = ToUnit(pSource))
+                return pUnitSource->SelectRandomFriendlyTarget(Param2 ? pUnitSource : nullptr, Param1 ? sSpellRangeStore.LookupEntry(sSpellMgr.GetSpellEntry(Param1)->rangeIndex)->maxRange : 30);
+        case TARGET_T_FRIENDLY_INJURED:
+            if (Creature* pCreatureSource = ToCreature(pSource))
+                return pCreatureSource->DoSelectLowestHpFriendly(Param1 ? sSpellRangeStore.LookupEntry(sSpellMgr.GetSpellEntry(Param1)->rangeIndex)->maxRange : 30, Param2 ? Param2 : 50, true);
+    }
+    return nullptr;
+}
 
 //Spell targets used by SelectSpell
 enum SelectTarget
@@ -1066,49 +1127,6 @@ class ScriptMgr
         //atomic op counter for active scripts amount
         ACE_Atomic_Op<ACE_Thread_Mutex, int> m_scheduledScripts;
 };
-
-//Generic scripting functions
-void DoScriptText(int32 textEntry, WorldObject* pSource, Unit* target = nullptr, uint32 chatTypeOverride = 0);
-void DoOrSimulateScriptTextForMap(int32 iTextEntry, uint32 uiCreatureEntry, Map* pMap, Creature* pCreatureSource = nullptr, Unit* pTarget = nullptr);
-
-// Returns a target based on the type specified.
-inline Unit* GetTargetByType(Creature* pCaster, uint32 CastTarget, Unit* pTarget, uint16 SpellId = 0u)
-{
-    switch (CastTarget)
-    {
-        case TARGET_T_PROVIDED_TARGET:
-            return pTarget;
-        case TARGET_T_HOSTILE:
-            return pCaster->getVictim();
-        case TARGET_T_HOSTILE_SECOND_AGGRO:
-            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_TOPAGGRO, 1);
-        case TARGET_T_HOSTILE_LAST_AGGRO:
-            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_BOTTOMAGGRO, 0);
-        case TARGET_T_HOSTILE_RANDOM:
-            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 0);
-        case TARGET_T_HOSTILE_RANDOM_NOT_TOP:
-            return pCaster->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
-        case TARGET_T_SELF:
-            return pCaster;
-        case TARGET_T_FRIENDLY:
-        case TARGET_T_FRIENDLY_NOT_SELF:
-        case TARGET_T_FRIENDLY_INJURED:
-        {
-            const SpellEntry* pSpell = sSpellMgr.GetSpellEntry(SpellId);
-            const SpellRangeEntry *pSpellRange = sSpellRangeStore.LookupEntry(pSpell->rangeIndex);
-            switch (CastTarget)
-            {
-                case TARGET_T_FRIENDLY:
-                    return pCaster->SelectRandomFriendlyTarget(nullptr, pSpellRange->maxRange);
-                case TARGET_T_FRIENDLY_NOT_SELF:
-                    return pCaster->SelectRandomFriendlyTarget(pCaster, pSpellRange->maxRange);
-                case TARGET_T_FRIENDLY_INJURED:
-                    return pCaster->DoSelectLowestHpFriendly(pSpellRange->maxRange, 50, true);
-            }
-        }
-    }
-    return nullptr;
-}
 
 #define sScriptMgr MaNGOS::Singleton<ScriptMgr>::Instance()
 

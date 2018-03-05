@@ -33,9 +33,9 @@ inline bool ShouldAbortScript(const ScriptInfo& script)
 }
 
 // SCRIPT_COMMAND_TALK (0)
-bool Map::ScriptCommand_Talk(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Talk(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
-    WorldObject* pSource = ToWorldObject(source);
+    WorldObject* pSource = source;
 
     if (!pSource)
     {
@@ -66,7 +66,7 @@ bool Map::ScriptCommand_Talk(const ScriptInfo& script, Object* source, Object* t
 }
 
 // SCRIPT_COMMAND_EMOTE (1)
-bool Map::ScriptCommand_Emote(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Emote(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -92,7 +92,7 @@ bool Map::ScriptCommand_Emote(const ScriptInfo& script, Object* source, Object* 
 }
 
 // SCRIPT_COMMAND_FIELD_SET(2)
-bool Map::ScriptCommand_FieldSet(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_FieldSet(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     if (!source)
     {
@@ -113,7 +113,7 @@ bool Map::ScriptCommand_FieldSet(const ScriptInfo& script, Object* source, Objec
 }
 
 // SCRIPT_COMMAND_MOVE_TO (3)
-bool Map::ScriptCommand_MoveTo(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_MoveTo(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -129,7 +129,7 @@ bool Map::ScriptCommand_MoveTo(const ScriptInfo& script, Object* source, Object*
 
     if (script.moveTo.coordinatesType)
     {
-        if (WorldObject* pTarget = ToWorldObject(target))
+        if (WorldObject* pTarget = target)
         {
             switch (script.moveTo.coordinatesType)
             {
@@ -173,7 +173,7 @@ bool Map::ScriptCommand_MoveTo(const ScriptInfo& script, Object* source, Object*
 }
 
 // SCRIPT_COMMAND_MODIFY_FLAGS (4)
-bool Map::ScriptCommand_ModifyFlags(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_ModifyFlags(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     if (!source)
     {
@@ -207,7 +207,7 @@ bool Map::ScriptCommand_ModifyFlags(const ScriptInfo& script, Object* source, Ob
 }
 
 // SCRIPT_COMMAND_INTERRUPT_CASTS (5)
-bool Map::ScriptCommand_InterruptCasts(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_InterruptCasts(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -223,7 +223,7 @@ bool Map::ScriptCommand_InterruptCasts(const ScriptInfo& script, Object* source,
 }
 
 // SCRIPT_COMMAND_TELEPORT_TO (6)
-bool Map::ScriptCommand_TeleportTo(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_TeleportTo(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -242,13 +242,13 @@ bool Map::ScriptCommand_TeleportTo(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_QUEST_EXPLORED (7)
-bool Map::ScriptCommand_QuestExplored(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_QuestExplored(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     // when script called for item spell casting then target == (unit or GO) and source is player
     Player* pPlayer;
     WorldObject* pWorldObject;
 
-    if (!(((pPlayer = ToPlayer(target)) && (pWorldObject = ToWorldObject(source))) || ((pPlayer = ToPlayer(source)) && (pWorldObject = ToWorldObject(target)))))
+    if (!(((pPlayer = ToPlayer(target)) && (pWorldObject = source)) || ((pPlayer = ToPlayer(source)) && (pWorldObject = target))))
     {
         sLog.outError("SCRIPT_COMMAND_QUEST_EXPLORED (script id %u) call for a NULL player, skipping.", script.id);
         return ShouldAbortScript(script);
@@ -271,7 +271,7 @@ bool Map::ScriptCommand_QuestExplored(const ScriptInfo& script, Object* source, 
 }
 
 // SCRIPT_COMMAND_KILL_CREDIT (8)
-bool Map::ScriptCommand_KillCredit(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_KillCredit(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Player* pSource;
 
@@ -294,7 +294,7 @@ bool Map::ScriptCommand_KillCredit(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_RESPAWN_GAMEOBJECT (9)
-bool Map::ScriptCommand_RespawnGameObject(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_RespawnGameObject(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     GameObject *pGo = nullptr;
     uint32 guidlow = script.respawnGo.goGuid;
@@ -341,7 +341,7 @@ bool Map::ScriptCommand_RespawnGameObject(const ScriptInfo& script, Object* sour
 }
 
 // SCRIPT_COMMAND_TEMP_SUMMON_CREATURE (10)
-bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     if (!script.summonCreature.creatureEntry)
     {
@@ -349,7 +349,7 @@ bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, Object* source,
         return ShouldAbortScript(script);
     }
 
-    WorldObject* pSummoner = ToWorldObject(source);
+    WorldObject* pSummoner = source;
 
     if (!pSummoner)
     {
@@ -424,7 +424,7 @@ bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, Object* source,
         {
             if (Creature* pCreatureSummoner = pSummoner->ToCreature())
             {
-                if (Unit* pAttackTarget = GetTargetByType(pCreatureSummoner, script.summonCreature.attackTarget, nullptr))
+                if (Unit* pAttackTarget = ToUnit(GetTargetByType(pCreatureSummoner, nullptr, script.summonCreature.attackTarget)))
                     if (pCreature->AI())
                         pCreature->AI()->AttackStart(pAttackTarget);
             }
@@ -435,7 +435,7 @@ bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, Object* source,
 }
 
 // SCRIPT_COMMAND_OPEN_DOOR (11)
-bool Map::ScriptCommand_OpenDoor(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_OpenDoor(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     GameObject *pDoor = nullptr;
     uint32 guidlow = script.openDoor.goGuid;
@@ -479,7 +479,7 @@ bool Map::ScriptCommand_OpenDoor(const ScriptInfo& script, Object* source, Objec
 }
 
 // SCRIPT_COMMAND_CLOSE_DOOR (12)
-bool Map::ScriptCommand_CloseDoor(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_CloseDoor(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     GameObject *pDoor = nullptr;
     uint32 guidlow = script.closeDoor.goGuid;
@@ -522,7 +522,7 @@ bool Map::ScriptCommand_CloseDoor(const ScriptInfo& script, Object* source, Obje
 }
 
 // SCRIPT_COMMAND_ACTIVATE_OBJECT (13)
-bool Map::ScriptCommand_ActivateGameObject(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_ActivateGameObject(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pUser = nullptr;
     GameObject *pGo = nullptr;
@@ -544,7 +544,7 @@ bool Map::ScriptCommand_ActivateGameObject(const ScriptInfo& script, Object* sou
 }
 
 // SCRIPT_COMMAND_REMOVE_AURA (14)
-bool Map::ScriptCommand_RemoveAura(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_RemoveAura(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -559,7 +559,7 @@ bool Map::ScriptCommand_RemoveAura(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_CAST_SPELL (15)
-bool Map::ScriptCommand_CastSpell(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_CastSpell(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pUnitSource = ToUnit(source);
     Unit* pUnitTarget = ToUnit(target);
@@ -570,16 +570,13 @@ bool Map::ScriptCommand_CastSpell(const ScriptInfo& script, Object* source, Obje
         return ShouldAbortScript(script);
     }
 
-    Creature* pCreatureSource = pUnitSource->ToCreature();
-
-    if (pCreatureSource)
-        pUnitTarget = GetTargetByType(pCreatureSource, script.castSpell.target, pUnitTarget, script.castSpell.spellId);
-
     if (!pUnitTarget)
         return ShouldAbortScript(script);
 
     if ((script.castSpell.flags & CF_INTERRUPT_PREVIOUS) && pUnitSource->IsNonMeleeSpellCasted(false))
         pUnitSource->InterruptNonMeleeSpells(false);
+
+    Creature* pCreatureSource = pUnitSource->ToCreature();
 
     if (pCreatureSource && pCreatureSource->AI())
         pCreatureSource->AI()->DoCastSpellIfCan(pUnitTarget, script.castSpell.spellId, script.castSpell.flags);
@@ -590,9 +587,9 @@ bool Map::ScriptCommand_CastSpell(const ScriptInfo& script, Object* source, Obje
 }
 
 // SCRIPT_COMMAND_PLAY_SOUND (16)
-bool Map::ScriptCommand_PlaySound(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_PlaySound(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
-    WorldObject* pSource = ToWorldObject(source);
+    WorldObject* pSource = source;
 
     if (!pSource)
     {
@@ -617,7 +614,7 @@ bool Map::ScriptCommand_PlaySound(const ScriptInfo& script, Object* source, Obje
 }
 
 // SCRIPT_COMMAND_CREATE_ITEM (17)
-bool Map::ScriptCommand_CreateItem(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_CreateItem(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Player* pReceiver;
 
@@ -634,7 +631,7 @@ bool Map::ScriptCommand_CreateItem(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_DESPAWN_CREATURE (18)
-bool Map::ScriptCommand_DespawnCreature(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_DespawnCreature(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -650,7 +647,7 @@ bool Map::ScriptCommand_DespawnCreature(const ScriptInfo& script, Object* source
 }
 
 // SCRIPT_COMMAND_SET_EQUIPMENT (19)
-bool Map::ScriptCommand_SetEquipment(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetEquipment(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -682,7 +679,7 @@ bool Map::ScriptCommand_SetEquipment(const ScriptInfo& script, Object* source, O
 }
 
 // SCRIPT_COMMAND_MOVEMENT (20)
-bool Map::ScriptCommand_SetMovementType(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetMovementType(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
     Unit* pTarget;
@@ -757,7 +754,7 @@ bool Map::ScriptCommand_SetMovementType(const ScriptInfo& script, Object* source
 }
 
 // SCRIPT_COMMAND_SET_ACTIVEOBJECT (21)
-bool Map::ScriptCommand_SetActiveObject(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetActiveObject(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -773,7 +770,7 @@ bool Map::ScriptCommand_SetActiveObject(const ScriptInfo& script, Object* source
 }
 
 // SCRIPT_COMMAND_SET_FACTION (22)
-bool Map::ScriptCommand_SetFaction(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetFaction(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -792,7 +789,7 @@ bool Map::ScriptCommand_SetFaction(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_MORPH_TO_ENTRY_OR_MODEL (23)
-bool Map::ScriptCommand_Morph(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Morph(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -818,7 +815,7 @@ bool Map::ScriptCommand_Morph(const ScriptInfo& script, Object* source, Object* 
 }
 
 // SCRIPT_COMMAND_MOUNT_TO_ENTRY_OR_MODEL (24)
-bool Map::ScriptCommand_Mount(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Mount(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -844,7 +841,7 @@ bool Map::ScriptCommand_Mount(const ScriptInfo& script, Object* source, Object* 
 }
 
 // SCRIPT_COMMAND_SET_RUN (25)
-bool Map::ScriptCommand_SetRun(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetRun(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -860,7 +857,7 @@ bool Map::ScriptCommand_SetRun(const ScriptInfo& script, Object* source, Object*
 }
 
 // SCRIPT_COMMAND_ATTACK_START (26)
-bool Map::ScriptCommand_AttackStart(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_AttackStart(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pTarget = ToUnit(target);
     Creature* pAttacker = ToCreature(source);
@@ -884,7 +881,7 @@ bool Map::ScriptCommand_AttackStart(const ScriptInfo& script, Object* source, Ob
 }
 
 // SCRIPT_COMMAND_UPDATE_ENTRY (27)
-bool Map::ScriptCommand_UpdateEntry(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_UpdateEntry(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -901,7 +898,7 @@ bool Map::ScriptCommand_UpdateEntry(const ScriptInfo& script, Object* source, Ob
 }
 
 // SCRIPT_COMMAND_STAND_STATE (28)
-bool Map::ScriptCommand_SetStandState(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetStandState(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -917,7 +914,7 @@ bool Map::ScriptCommand_SetStandState(const ScriptInfo& script, Object* source, 
 }
 
 // SCRIPT_COMMAND_MODIFY_THREAT (29)
-bool Map::ScriptCommand_ModifyThreat(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_ModifyThreat(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -936,7 +933,7 @@ bool Map::ScriptCommand_ModifyThreat(const ScriptInfo& script, Object* source, O
     }
     else
     {
-        if (Unit* pTarget = GetTargetByType(pSource, script.modThreat.target, ToUnit(target)))
+        if (Unit* pTarget = ToUnit(GetTargetByType(pSource, target, script.modThreat.target)))
             pSource->getThreatManager().modifyThreatPercent(pTarget, script.x);
     }
 
@@ -944,7 +941,7 @@ bool Map::ScriptCommand_ModifyThreat(const ScriptInfo& script, Object* source, O
 }
 
 // SCRIPT_COMMAND_SEND_TAXI_PATH (30)
-bool Map::ScriptCommand_SendTaxiPath(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SendTaxiPath(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Player* pPlayer;
 
@@ -959,12 +956,12 @@ bool Map::ScriptCommand_SendTaxiPath(const ScriptInfo& script, Object* source, O
 }
 
 // SCRIPT_COMMAND_TERMINATE_SCRIPT (31)
-bool Map::ScriptCommand_TerminateScript(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_TerminateScript(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     if (script.terminateScript.creatureEntry)
     {
         WorldObject* pSearcher;
-        if (!((pSearcher = ToWorldObject(source)) || (pSearcher = ToWorldObject(target))))
+        if (!((pSearcher = source) || (pSearcher = target)))
         {
             sLog.outError("SCRIPT_COMMAND_TERMINATE_SCRIPT (script id %u) call for a NULL object, skipping.", script.id);
             return ShouldAbortScript(script);
@@ -987,10 +984,10 @@ bool Map::ScriptCommand_TerminateScript(const ScriptInfo& script, Object* source
 }
 
 // SCRIPT_COMMAND_TERMINATE_CONDITION (32)
-bool Map::ScriptCommand_TerminateCondition(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_TerminateCondition(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
-    WorldObject* pSource = ToWorldObject(source);
-    WorldObject* pTarget = ToWorldObject(target);
+    WorldObject* pSource = source;
+    WorldObject* pTarget = target;
 
     bool terminateResult = sObjectMgr.IsConditionSatisfied(script.terminateCond.conditionId, pTarget, this, pSource, CONDITION_FROM_DBSCRIPTS);
     
@@ -1009,7 +1006,7 @@ bool Map::ScriptCommand_TerminateCondition(const ScriptInfo& script, Object* sou
 }
 
 // SCRIPT_COMMAND_ENTER_EVADE_MODE (33)
-bool Map::ScriptCommand_Evade(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Evade(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -1026,7 +1023,7 @@ bool Map::ScriptCommand_Evade(const ScriptInfo& script, Object* source, Object* 
 }
 
 // SCRIPT_COMMAND_SET_HOME_POSITION (34)
-bool Map::ScriptCommand_SetHomePosition(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetHomePosition(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource;
 
@@ -1045,7 +1042,7 @@ bool Map::ScriptCommand_SetHomePosition(const ScriptInfo& script, Object* source
 }
 
 // SCRIPT_COMMAND_TURN_TO (35)
-bool Map::ScriptCommand_TurnTo(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_TurnTo(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -1059,7 +1056,7 @@ bool Map::ScriptCommand_TurnTo(const ScriptInfo& script, Object* source, Object*
     {
         case SO_TURNTO_FACE_TARGET:
         {
-            if (WorldObject* pTarget = ToWorldObject(target))
+            if (WorldObject* pTarget = target)
                 pSource->SetFacingToObject(pTarget);
             else
             {
@@ -1079,7 +1076,7 @@ bool Map::ScriptCommand_TurnTo(const ScriptInfo& script, Object* source, Object*
 }
 
 // SCRIPT_COMMAND_MEETINGSTONE (36)
-bool Map::ScriptCommand_MeetingStone(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_MeetingStone(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Player* pPlayer;
 
@@ -1096,7 +1093,7 @@ bool Map::ScriptCommand_MeetingStone(const ScriptInfo& script, Object* source, O
 }
 
 // SCRIPT_COMMAND_SET_INST_DATA (37)
-bool Map::ScriptCommand_SetData(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetData(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     InstanceData* pInst = GetInstanceData();
     
@@ -1127,7 +1124,7 @@ bool Map::ScriptCommand_SetData(const ScriptInfo& script, Object* source, Object
 }
 
 // SCRIPT_COMMAND_SET_INST_DATA64 (38)
-bool Map::ScriptCommand_SetData64(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetData64(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     InstanceData* pInst = GetInstanceData();
     
@@ -1161,7 +1158,7 @@ bool Map::ScriptCommand_SetData64(const ScriptInfo& script, Object* source, Obje
 }
 
 // SCRIPT_COMMAND_START_SCRIPT (39)
-bool Map::ScriptCommand_StartScript(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_StartScript(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     const uint32 roll = urand(1, 100);
     uint32 sum = 0;
@@ -1194,7 +1191,7 @@ bool Map::ScriptCommand_StartScript(const ScriptInfo& script, Object* source, Ob
 }
 
 // SCRIPT_COMMAND_REMOVE_ITEM (40)
-bool Map::ScriptCommand_RemoveItem(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_RemoveItem(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Player* pPlayer;
 
@@ -1210,7 +1207,7 @@ bool Map::ScriptCommand_RemoveItem(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_REMOVE_OBJECT (41)
-bool Map::ScriptCommand_RemoveGameObject(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_RemoveGameObject(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     GameObject *pGo = nullptr;
 
@@ -1226,7 +1223,7 @@ bool Map::ScriptCommand_RemoveGameObject(const ScriptInfo& script, Object* sourc
 }
 
 // SCRIPT_COMMAND_SET_MELEE_ATTACK (42)
-bool Map::ScriptCommand_SetMeleeAttack(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetMeleeAttack(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1243,7 +1240,7 @@ bool Map::ScriptCommand_SetMeleeAttack(const ScriptInfo& script, Object* source,
 }
 
 // SCRIPT_COMMAND_SET_COMBAT_MOVEMENT (43)
-bool Map::ScriptCommand_SetCombatMovement(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetCombatMovement(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1260,7 +1257,7 @@ bool Map::ScriptCommand_SetCombatMovement(const ScriptInfo& script, Object* sour
 }
 
 // SCRIPT_COMMAND_SET_PHASE (44)
-bool Map::ScriptCommand_SetPhase(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetPhase(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1304,7 +1301,7 @@ bool Map::ScriptCommand_SetPhase(const ScriptInfo& script, Object* source, Objec
 }
 
 // SCRIPT_COMMAND_SET_PHASE_RANDOM (45)
-bool Map::ScriptCommand_SetPhaseRandom(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetPhaseRandom(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1335,7 +1332,7 @@ bool Map::ScriptCommand_SetPhaseRandom(const ScriptInfo& script, Object* source,
 }
 
 // SCRIPT_COMMAND_SET_PHASE_RANGE (46)
-bool Map::ScriptCommand_SetPhaseRange(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetPhaseRange(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1356,7 +1353,7 @@ bool Map::ScriptCommand_SetPhaseRange(const ScriptInfo& script, Object* source, 
 }
 
 // SCRIPT_COMMAND_FLEE (47)
-bool Map::ScriptCommand_Flee(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Flee(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1375,7 +1372,7 @@ bool Map::ScriptCommand_Flee(const ScriptInfo& script, Object* source, Object* t
 }
 
 // SCRIPT_COMMAND_DEAL_DAMAGE (48)
-bool Map::ScriptCommand_DealDamage(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_DealDamage(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -1400,7 +1397,7 @@ bool Map::ScriptCommand_DealDamage(const ScriptInfo& script, Object* source, Obj
 }
 
 // SCRIPT_COMMAND_ZONE_COMBAT_PULSE (49)
-bool Map::ScriptCommand_ZoneCombatPulse(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_ZoneCombatPulse(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1416,7 +1413,7 @@ bool Map::ScriptCommand_ZoneCombatPulse(const ScriptInfo& script, Object* source
 }
 
 // SCRIPT_COMMAND_CALL_FOR_HELP (50)
-bool Map::ScriptCommand_CallForHelp(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_CallForHelp(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1432,7 +1429,7 @@ bool Map::ScriptCommand_CallForHelp(const ScriptInfo& script, Object* source, Ob
 }
 
 // SCRIPT_COMMAND_SET_SHEATH (51)
-bool Map::ScriptCommand_SetSheath(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_SetSheath(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Unit* pSource = ToUnit(source);
 
@@ -1448,7 +1445,7 @@ bool Map::ScriptCommand_SetSheath(const ScriptInfo& script, Object* source, Obje
 }
 
 // SCRIPT_COMMAND_INVINCIBILITY (52)
-bool Map::ScriptCommand_Invincibility(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_Invincibility(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     Creature* pSource = ToCreature(source);
 
@@ -1469,7 +1466,7 @@ bool Map::ScriptCommand_Invincibility(const ScriptInfo& script, Object* source, 
 }
 
 // SCRIPT_COMMAND_GAME_EVENT (53)
-bool Map::ScriptCommand_GameEvent(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_GameEvent(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     if (script.gameEvent.start)
         sGameEventMgr.StartEvent(script.gameEvent.eventId, script.gameEvent.overwrite);
@@ -1480,7 +1477,7 @@ bool Map::ScriptCommand_GameEvent(const ScriptInfo& script, Object* source, Obje
 }
 
 // SCRIPT_COMMAND_SET_SERVER_VARIABLE (54)
-bool Map::ScriptCommand_ServerVariable(const ScriptInfo& script, Object* source, Object* target)
+bool Map::ScriptCommand_ServerVariable(const ScriptInfo& script, WorldObject* source, WorldObject* target)
 {
     sObjectMgr.SetSavedVariable(script.serverVariable.index, script.serverVariable.value, true);
 
