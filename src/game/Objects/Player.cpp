@@ -1156,26 +1156,9 @@ struct UpdateAttackersCombatHelper
     void operator()(Unit* unit) const
     {
         for (Unit* attacker : unit->getAttackers())
-            if (attacker->IsCreature() && attacker->getVictim() == unit)
-            {
-                bool hasValidThreat = false;
-                ThreatList const& threatList = attacker->getThreatManager().getThreatList();
-                for (const auto threat : threatList)
-                    if (Unit* unit = threat->getTarget())
-                    {
-                        if (unit->GetCharmerOrOwnerPlayerOrPlayerItself() == player)
-                            continue;
-                        if (unit->IsInMap(attacker) &&
-                            (!unit->IsPlayer() ||
-                                !(unit->ToPlayer()->IsBeingTeleportedFar() || unit->ToPlayer()->IsPendingInstanceSwitch())))
-                        {
-                            hasValidThreat = true;
-                            break;
-                        }
-                    }
-                if (!hasValidThreat)
-                    attacker->ToCreature()->OnLeaveCombat();
-            }
+            if (Creature* creature = attacker->ToCreature())
+                if (attacker->getVictim() == unit)
+                    creature->SelectHostileTarget();
     }
     Player* player;
 };
