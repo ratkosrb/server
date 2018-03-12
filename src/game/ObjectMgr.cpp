@@ -263,7 +263,7 @@ void ObjectMgr::ConvertEventActions()
             if (!(event_flags & EFLAG_RANDOM_ACTION))
             {
                 myfile << "UPDATE `creature_ai_events` SET `action1_script`=" << id << " WHERE `id`=" << id << ";\n";
-                myfile << "INSERT INTO `creature_ai_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
+                myfile << "INSERT INTO `creature_ai_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `target_param1`, `target_param2`, `target_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES\n";
             }
             
             for (int i = 0; i < actions.size(); i++)
@@ -276,9 +276,9 @@ void ObjectMgr::ConvertEventActions()
                 uint32 datalong2 = 0;
                 uint32 datalong3 = 0;
                 uint32 datalong4 = 0;
-                uint32 buddy_id = 0;
-                uint32 buddy_radius = 0;
-                uint32 buddy_type = 0;
+                uint32 target_param1 = 0;
+                uint32 target_param2 = 0;
+                uint32 target_type = 0;
                 uint32 data_flags = 0;
                 int dataint = 0;
                 int dataint2 = 0;
@@ -373,11 +373,11 @@ void ObjectMgr::ConvertEventActions()
 
                         // target
                         if (actions[i].action_param2 == 0)
-                            datalong3 = 6;
+                            data_flags = SF_GENERAL_TARGET_SELF;
                         else if (actions[i].action_param2 == 6)
-                            datalong3 = 0;
+                            target_type = 0;
                         else
-                            datalong3 = actions[i].action_param2;
+                            target_type = actions[i].action_param2;
 
                         action_comment = action_comment + "Cast Spell " + ReplaceString(sSpellMgr.GetSpellEntry(datalong)->SpellName[0]);
                         break;
@@ -802,9 +802,9 @@ void ObjectMgr::ConvertEventActions()
                 uint32 script_id = (event_flags & EFLAG_RANDOM_ACTION) ? id + 20 + i : id;
 
                 if (event_flags & EFLAG_RANDOM_ACTION)
-                    myfile << "INSERT INTO `creature_ai_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `buddy_id`, `buddy_radius`, `buddy_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES ";
+                    myfile << "INSERT INTO `creature_ai_scripts` (`id`, `delay`, `command`, `datalong`, `datalong2`, `datalong3`, `datalong4`, `target_param1`, `target_param2`, `target_type`, `data_flags`, `dataint`, `dataint2`, `dataint3`, `dataint4`, `x`, `y`, `z`, `o`, `condition_id`, `comments`) VALUES ";
 
-                myfile << "(" << script_id << ", " << delay << ", " << command << ", " << datalong << ", " << datalong2 << ", " << datalong3 << ", " << datalong4 << ", " << buddy_id << ", " << buddy_radius << ", " << buddy_type << ", " << data_flags << ", " << dataint << ", " << dataint2 << ", " << dataint3 << ", " << dataint4 << ", " << x << ", " << y << ", " << z << ", " << o << ", " << condition_id << ", '" << action_comment << "')";
+                myfile << "(" << script_id << ", " << delay << ", " << command << ", " << datalong << ", " << datalong2 << ", " << datalong3 << ", " << datalong4 << ", " << target_param1 << ", " << target_param2 << ", " << target_type << ", " << data_flags << ", " << dataint << ", " << dataint2 << ", " << dataint3 << ", " << dataint4 << ", " << x << ", " << y << ", " << z << ", " << o << ", " << condition_id << ", '" << action_comment << "')";
                 
                 if (!(event_flags & EFLAG_RANDOM_ACTION))
                 {
@@ -824,6 +824,54 @@ void ObjectMgr::ConvertEventActions()
             }
         } while (result->NextRow());
         delete result;
+    }
+
+    printf("Fixing data_flags...\n");
+    myfile << "\n-- Fixing data_flags...\n";
+
+    const char* script_tables[8] =
+    {
+        "creature_movement_scripts",
+        "creature_spells_scripts",
+        "event_scripts",
+        "gossip_scripts",
+        "gameobject_scripts",
+        "spell_scripts",
+        "quest_end_scripts",
+        "quest_start_scripts"
+    };
+
+    for (uint8 i = 0; i < 8; i++)
+    {
+        result = WorldDatabase.PQuery("SELECT id, delay, command, data_flags, buddy_id FROM %s WHERE buddy_id > 0", script_tables[i]);
+
+        if (result)
+        {
+            myfile << "\n-- Fixing data_flags for table " << script_tables[i] << "\n";
+            do
+            {
+                fields = result->Fetch();
+                uint32 id = fields[0].GetUInt32();
+                uint32 delay = fields[1].GetUInt32();
+                uint32 command = fields[2].GetUInt32();
+                uint32 data_flags = fields[3].GetUInt32();
+                uint32 new_data_flags = data_flags;
+                uint32 buddy_id = fields[4].GetUInt32();
+
+                if (new_data_flags & 1)
+                    new_data_flags -= 1;
+                else
+                    new_data_flags += 1;
+
+                if (new_data_flags & 2)
+                    new_data_flags -= 2;
+                else
+                    new_data_flags += 2;
+
+                myfile << "UPDATE `" << script_tables[i] << "` SET `data_flags`=" << new_data_flags << " WHERE `id`=" << id << " AND `delay`=" << delay << " AND `command`=" << command << " AND `data_flags`=" << data_flags << " AND `target_param1`=" << buddy_id << ";\n";
+            } while (result->NextRow());
+            delete result;
+        }
     }
 
     myfile.close();
