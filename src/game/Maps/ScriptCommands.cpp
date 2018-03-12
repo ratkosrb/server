@@ -406,12 +406,12 @@ bool Map::ScriptCommand_SummonCreature(const ScriptInfo& script, WorldObject* so
         return ShouldAbortScript(script);
     }
 
-    if (script.summonCreature.flags & SF_SUMMONCREATUR_SET_RUN)
+    if (script.summonCreature.flags & SF_SUMMONCREATURE_SET_RUN)
         pCreature->SetWalk(false);
 
     switch (script.summonCreature.attackTarget)
     {
-        case TARGET_T_SELF:
+        case TARGET_T_OWNER_OR_SELF:
             break;
         case TARGET_T_PROVIDED_TARGET:
         {

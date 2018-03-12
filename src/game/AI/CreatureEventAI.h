@@ -48,7 +48,7 @@ enum EventAI_Type
     EVENT_T_SPELLHIT                = 8,                    // SpellID, School, RepeatMin, RepeatMax
     EVENT_T_RANGE                   = 9,                    // MinDist, MaxDist, RepeatMin, RepeatMax
     EVENT_T_OOC_LOS                 = 10,                   // NoHostile, MaxRnage, RepeatMin, RepeatMax
-    EVENT_T_SPAWNED                 = 11,                   // Condition, CondValue1
+    EVENT_T_SPAWNED                 = 11,                   // NONE
     EVENT_T_TARGET_HP               = 12,                   // HPMax%, HPMin%, RepeatMin, RepeatMax
     EVENT_T_TARGET_CASTING          = 13,                   // RepeatMin, RepeatMax
     EVENT_T_FRIENDLY_HP             = 14,                   // HPDeficit, Radius, RepeatMin, RepeatMax
@@ -152,12 +152,6 @@ struct CreatureEventAI_Event
             uint32 repeatMin;
             uint32 repeatMax;
         } ooc_los;
-        // EVENT_T_SPAWNED                                  = 11
-        struct
-        {
-            uint32 condition;
-            uint32 conditionValue1;
-        } spawned;
         // EVENT_T_TARGET_CASTING                           = 13
         struct
         {
@@ -291,8 +285,6 @@ class MANGOS_DLL_SPEC CreatureEventAI : public CreatureAI
         void ProcessAction(ScriptMap* action, uint32 EventId, Unit* pActionInvoker);
         inline uint32 GetRandActionParam(uint32 rnd, uint32 param1, uint32 param2, uint32 param3);
         inline int32 GetRandActionParam(uint32 rnd, int32 param1, int32 param2, int32 param3);
-
-        bool SpawnedEventConditionsCheck(CreatureEventAI_Event const& event);
 
         Unit* DoSelectLowestHpFriendly(float range, uint32 MinHPDiff);
         void DoFindFriendlyMissingBuff(std::list<Creature*>& _list, float range, uint32 spellid);

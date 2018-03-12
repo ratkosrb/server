@@ -115,8 +115,7 @@ CreatureEventAI::CreatureEventAI(Creature *c) : CreatureAI(c)
     if (!m_bEmptyList)
     {
         for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)
-            if (SpawnedEventConditionsCheck((*i).Event))
-                ProcessEvent(*i);
+            ProcessEvent(*i);
     }
     Reset();
 }
@@ -438,8 +437,7 @@ void CreatureEventAI::JustRespawned()
 
     //Handle Spawned Events
     for (CreatureEventAIList::iterator i = m_CreatureEventAIList.begin(); i != m_CreatureEventAIList.end(); ++i)
-        if (SpawnedEventConditionsCheck((*i).Event))
-            ProcessEvent(*i);
+        ProcessEvent(*i);
 }
 
 void CreatureEventAI::Reset()
@@ -881,31 +879,4 @@ void CreatureEventAI::DamageTaken(Unit* /*done_by*/, uint32& damage)
         else
             damage = m_creature->GetHealth() - m_InvinceabilityHpLevel;
     }
-}
-
-bool CreatureEventAI::SpawnedEventConditionsCheck(CreatureEventAI_Event const& event)
-{
-    if (event.event_type != EVENT_T_SPAWNED)
-        return false;
-
-    switch (event.spawned.condition)
-    {
-        case SPAWNED_EVENT_ALWAY:
-            // always
-            return true;
-        case SPAWNED_EVENT_MAP:
-            // map ID check
-            return m_creature->GetMapId() == event.spawned.conditionValue1;
-        case SPAWNED_EVENT_ZONE:
-        {
-            // zone ID check
-            uint32 zone, area;
-            m_creature->GetZoneAndAreaId(zone, area);
-            return zone == event.spawned.conditionValue1 || area == event.spawned.conditionValue1;
-        }
-        default:
-            break;
-    }
-
-    return false;
 }

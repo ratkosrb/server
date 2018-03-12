@@ -131,91 +131,86 @@ void ScriptMgr::LoadScripts(ScriptMapMap& scripts, const char* tablename)
             continue;
         }
 
-        if (tmp.target_param1)
+        switch (tmp.target_type)
         {
-            switch (tmp.target_type)
+            case TARGET_T_CREATURE_WITH_ENTRY:
             {
-                case TARGET_T_CREATURE_WITH_ENTRY:
+                if (!ObjectMgr::GetCreatureTemplate(tmp.target_param1))
                 {
-                    if (!ObjectMgr::GetCreatureTemplate(tmp.target_param1))
+                    if (!sObjectMgr.IsExistingCreatureId(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingCreatureId(tmp.target_param1))
-                        {
-                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this creature_template does not exist.", tablename, tmp.target_param1, tmp.id);
-                            continue;
-                        }
-                        else
-                            DisableScriptAction(tmp);
-                    }
-                    if (!tmp.target_param2)
-                    {
-                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but search radius is too small (target_param2 = %u).", tablename, tmp.target_param1, tmp.id, tmp.target_param2);
+                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this creature_template does not exist.", tablename, tmp.target_param1, tmp.id);
                         continue;
                     }
-                    break;
+                    else
+                        DisableScriptAction(tmp);
                 }
-                case TARGET_T_CREATURE_WITH_GUID:
+                if (!tmp.target_param2)
                 {
-                    if (!sObjectMgr.GetCreatureData(tmp.target_param1))
+                    sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but search radius is too small (target_param2 = %u).", tablename, tmp.target_param1, tmp.id, tmp.target_param2);
+                    continue;
+                }
+                break;
+            }
+            case TARGET_T_CREATURE_WITH_GUID:
+            {
+                if (!sObjectMgr.GetCreatureData(tmp.target_param1))
+                {
+                    if (!sObjectMgr.IsExistingCreatureGuid(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingCreatureGuid(tmp.target_param1))
-                        {
-                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this creature guid does not exist.", tablename, tmp.target_param1, tmp.id);
-                            continue;
-                        }
-                        else
-                            DisableScriptAction(tmp);
+                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this creature guid does not exist.", tablename, tmp.target_param1, tmp.id);
+                        continue;
                     }
-                    break;
+                    else
+                        DisableScriptAction(tmp);
                 }
-                case TARGET_T_GAMEOBJECT_WITH_ENTRY:
+                break;
+            }
+            case TARGET_T_GAMEOBJECT_WITH_ENTRY:
+            {
+                if (!ObjectMgr::GetGameObjectInfo(tmp.target_param1))
                 {
-                    if (!ObjectMgr::GetGameObjectInfo(tmp.target_param1))
+                    if (!sObjectMgr.IsExistingGameObjectId(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingGameObjectId(tmp.target_param1))
-                        {
-                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this gameobject_template does not exist.", tablename, tmp.target_param1, tmp.id);
-                            continue;
-                        }
-                        else
-                            DisableScriptAction(tmp);
+                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this gameobject_template does not exist.", tablename, tmp.target_param1, tmp.id);
+                        continue;
                     }
-                    break;
+                    else
+                        DisableScriptAction(tmp);
                 }
-                case TARGET_T_GAMEOBJECT_WITH_GUID:
+                break;
+            }
+            case TARGET_T_GAMEOBJECT_WITH_GUID:
+            {
+                GameObjectData const* data = sObjectMgr.GetGOData(tmp.target_param1);
+                if (!data)
                 {
-                    GameObjectData const* data = sObjectMgr.GetGOData(tmp.target_param1);
-                    if (!data)
+                    if (!sObjectMgr.IsExistingGameObjectGuid(tmp.target_param1))
                     {
-                        if (!sObjectMgr.IsExistingGameObjectGuid(tmp.target_param1))
-                        {
-                            sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this gameobject guid does not exist.", tablename, tmp.target_param1, tmp.id);
-                            continue;
-                        }
-                        else
-                        {
-                            DisableScriptAction(tmp);
-                            break;
-                        }
-                        
+                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this gameobject guid does not exist.", tablename, tmp.target_param1, tmp.id);
+                        continue;
+                    }
+                    else
+                    {
+                        DisableScriptAction(tmp);
+                        break;
                     }
 
-                    GameObjectInfo const* info = ObjectMgr::GetGameObjectInfo(data->id);
-                    if (!info)
-                    {
-                        sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this guid is for a non-existent gameobject entry %u.", tablename, tmp.target_param1, tmp.id, data->id);
-                        continue;
-                    }
-                    break;
                 }
-                case TARGET_T_CREATURE_FROM_INSTANCE_DATA:
-                case TARGET_T_GAMEOBJECT_FROM_INSTANCE_DATA:
-                    break;
-                default:
+
+                GameObjectInfo const* info = ObjectMgr::GetGameObjectInfo(data->id);
+                if (!info)
                 {
-                    sLog.outError("Table `%s` has an unknown target_type = %u used for script id %u.", tablename, tmp.target_type, tmp.id);
-                    break;
+                    sLog.outErrorDb("Table `%s` has target_param1 = %u for script id %u, but this guid is for a non-existent gameobject entry %u.", tablename, tmp.target_param1, tmp.id, data->id);
+                    continue;
                 }
+                break;
+            }
+            default:
+            {
+                if (tmp.target_type >= TARGET_T_END)
+                    sLog.outError("Table `%s` has an unknown target_type = %u used for script id %u.", tablename, tmp.target_type, tmp.id);
+                break;
             }
         }
 

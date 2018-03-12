@@ -189,7 +189,7 @@ void CreatureAI::DoSpellTemplateCasts(const uint32 uiDiff)
                 continue;
             }
 
-            Unit* spellTarget = ToUnit(GetTargetByType(m_creature, nullptr, spell.castTarget, spell.spellId));
+            Unit* spellTarget = ToUnit(GetTargetByType(m_creature, m_creature, spell.castTarget, spell.spellId));
 
             CanCastResult result = DoCastSpellIfCan(spellTarget, spell.spellId, spell.castFlags);
             

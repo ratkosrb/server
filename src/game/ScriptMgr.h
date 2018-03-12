@@ -267,7 +267,7 @@ enum eModifyFlagsOptions
 // Must start from 0x8 because of target selection flags.
 enum eSummonCreatureFlags
 {
-    SF_SUMMONCREATUR_SET_RUN      = 0x1,                         // makes creature move at run speed
+    SF_SUMMONCREATURE_SET_RUN      = 0x1,                         // makes creature move at run speed
     SF_SUMMONCREATURE_ACTIVE      = 0x2,                         // active creatures are always updated
     SF_SUMMONCREATURE_UNIQUE      = 0x4,                         // not actually unique, just checks for same entry in certain range
     SF_SUMMONCREATURE_UNIQUE_TEMP = 0x8                          // same as 0x10 but check for TempSummon only creatures
@@ -770,46 +770,45 @@ enum CastFlags
 // Values used in target_type column
 enum ScriptTarget
 {
-    TARGET_T_PROVIDED_TARGET = 0,                           //Object that was provided to the command
+    TARGET_T_PROVIDED_TARGET                = 0,            //Object that was provided to the command
 
-    TARGET_T_HOSTILE,                                       //Our current target (ie: highest aggro)
-    TARGET_T_HOSTILE_SECOND_AGGRO,                          //Second highest aggro (generaly used for cleaves and some special attacks)
-    TARGET_T_HOSTILE_LAST_AGGRO,                            //Dead last on aggro (no idea what this could be used for)
-    TARGET_T_HOSTILE_RANDOM,                                //Just any random target on our threat list
-    TARGET_T_HOSTILE_RANDOM_NOT_TOP,                        //Any random target except top threat
+    TARGET_T_HOSTILE                        = 1,            //Our current target (ie: highest aggro)
+    TARGET_T_HOSTILE_SECOND_AGGRO           = 2,            //Second highest aggro (generaly used for cleaves and some special attacks)
+    TARGET_T_HOSTILE_LAST_AGGRO             = 3,            //Dead last on aggro (no idea what this could be used for)
+    TARGET_T_HOSTILE_RANDOM                 = 4,            //Just any random target on our threat list
+    TARGET_T_HOSTILE_RANDOM_NOT_TOP         = 5,            //Any random target except top threat
 
-    TARGET_T_SELF,                                          //The provided source
-    TARGET_T_OWNER,                                         //The owner of the source
-    TARGET_T_OWNER_OR_SELF,                                 //Either self or owner if pet or controlled
+    TARGET_T_OWNER_OR_SELF                  = 6,            //Either self or owner if pet or controlled
+    TARGET_T_OWNER                          = 7,            //The owner of the source
+    
 
-    TARGET_T_CREATURE_WITH_ENTRY,                           //Searches for nearby creature with the given entry
+    TARGET_T_CREATURE_WITH_ENTRY            = 8,            //Searches for nearby creature with the given entry
                                                             //Param1 = creature_entry
                                                             //Param2 = search_radius
 
-    TARGET_T_CREATURE_WITH_GUID,                            //The creature with this database guid
+    TARGET_T_CREATURE_WITH_GUID             = 9,            //The creature with this database guid
                                                             //Param1 = db_guid
 
-    TARGET_T_CREATURE_FROM_INSTANCE_DATA,                   //Find creature by guid stored in instance data
+    TARGET_T_CREATURE_FROM_INSTANCE_DATA    = 10,           //Find creature by guid stored in instance data
                                                             //Param1 = instance_data_field
 
-    TARGET_T_GAMEOBJECT_WITH_ENTRY,                         //Searches for nearby gameobject with the given entry
+    TARGET_T_GAMEOBJECT_WITH_ENTRY          = 11,           //Searches for nearby gameobject with the given entry
                                                             //Param1 = gameobject_entry
                                                             //Param2 = search_radius
 
-    TARGET_T_GAMEOBJECT_WITH_GUID,                          //The gameobject with this database guid
+    TARGET_T_GAMEOBJECT_WITH_GUID           = 12,           //The gameobject with this database guid
                                                             //Param1 = db_guid
 
-    TARGET_T_GAMEOBJECT_FROM_INSTANCE_DATA,                 //Find gameobject by guid stored in instance data
+    TARGET_T_GAMEOBJECT_FROM_INSTANCE_DATA  = 13,           //Find gameobject by guid stored in instance data
                                                             //Param1 = instance_data_field
 
-    TARGET_T_FRIENDLY,                                      //Random friendly unit.
+    TARGET_T_FRIENDLY                       = 14,           //Random friendly unit.
                                                             //Param1 = spell_id (for range check)
                                                             //Param2 = (bool) exclude_self
 
-    TARGET_T_FRIENDLY_INJURED,                              //Friendly unit missing the most health.
+    TARGET_T_FRIENDLY_INJURED               = 15,           //Friendly unit missing the most health.
                                                             //Param1 = spell_id (for range check)
                                                             //Param2 = hp_percent
-
     TARGET_T_END
 };
 
@@ -844,15 +843,13 @@ inline WorldObject* GetTargetByType(WorldObject* pSource, WorldObject* pTarget, 
             if (Creature* pCreatureSource = ToCreature(pSource))
                 return pCreatureSource->SelectAttackingTarget(ATTACKING_TARGET_RANDOM, 1);
             break;
-        case TARGET_T_SELF:
-            return pSource;
-        case TARGET_T_OWNER:
-            if (Unit* pUnitSource = ToUnit(pSource))
-                return pUnitSource->GetOwner();
-            break;
         case TARGET_T_OWNER_OR_SELF:
             if (Unit* pUnitSource = ToUnit(pSource))
                 return pUnitSource->GetCharmerOrOwnerOrSelf();
+            break;
+        case TARGET_T_OWNER:
+            if (Unit* pUnitSource = ToUnit(pSource))
+                return pUnitSource->GetOwner();
             break;
         case TARGET_T_FRIENDLY:
             if (Unit* pUnitSource = ToUnit(pSource))
