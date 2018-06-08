@@ -489,15 +489,6 @@ void LoadDBCStores(const std::string& dataPath)
         exit(1);
     }
 
-    // Check loaded DBC files proper version
-    if (!sSpellStore.LookupEntry(33392)            ||
-            !sSkillLineAbilityStore.LookupEntry(15030))
-    {
-        sLog.outError("\nYou have _outdated_ DBC files. Please re-extract DBC files for one from client build: %s", AcceptableClientBuildsListStr().c_str());
-        Log::WaitBeforeContinueIfNeed();
-        exit(1);
-    }
-
     sLog.outString();
     sLog.outString(">> Initialized %d data stores", DBCFilesCount);
 }

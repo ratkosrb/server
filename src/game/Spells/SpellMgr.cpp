@@ -4371,7 +4371,7 @@ void SpellMgr::LoadSpells()
                 myfile << spellEntry->AttributesEx << ", "; // 8
                 myfile << spellEntry->AttributesEx2 << ", "; // 9
                 myfile << spellEntry->AttributesEx3 << ", "; // 10
-                myfile << spellEntry->AttributesEx4 << ", "; // 11
+                myfile << "0, "; // 11
                 myfile << spellEntry->Stances << ", "; // 12
                 myfile << spellEntry->StancesNot << ", "; // 13
                 myfile << spellEntry->Targets << ", "; // 14
@@ -4421,7 +4421,7 @@ void SpellMgr::LoadSpells()
                 myfile << spellEntry->ReagentCount[7] << ", "; // 58
                 myfile << spellEntry->EquippedItemClass << ", "; // 59
                 myfile << spellEntry->EquippedItemSubClassMask << ", "; // 60
-                myfile << spellEntry->EquippedItemInventoryTypeMask << ", "; // 61
+                myfile << "0, "; // 61
                 myfile << spellEntry->Effect[0] << ", "; // 62
                 myfile << spellEntry->Effect[1] << ", "; // 63
                 myfile << spellEntry->Effect[2] << ", "; // 64

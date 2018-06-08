@@ -47,7 +47,7 @@ bool SpellEntry::Load(DBCSpellEntry const* dbcEntry)
     COPY_FIELD(AttributesEx);
     COPY_FIELD(AttributesEx2);
     COPY_FIELD(AttributesEx3);
-    COPY_FIELD(AttributesEx4);
+    //COPY_FIELD(AttributesEx4);
     COPY_FIELD(Stances);
     COPY_FIELD(StancesNot);
     COPY_FIELD(Targets);
@@ -82,7 +82,7 @@ bool SpellEntry::Load(DBCSpellEntry const* dbcEntry)
     COPY_ARRAY(MAX_SPELL_REAGENTS, ReagentCount);
     COPY_FIELD(EquippedItemClass);
     COPY_FIELD(EquippedItemSubClassMask);
-    COPY_FIELD(EquippedItemInventoryTypeMask);
+    //COPY_FIELD(EquippedItemInventoryTypeMask);
     COPY_ARRAY(MAX_EFFECT_INDEX, Effect);
     COPY_ARRAY(MAX_EFFECT_INDEX, EffectDieSides);
     COPY_ARRAY(MAX_EFFECT_INDEX, EffectBaseDice);

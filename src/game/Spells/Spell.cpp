@@ -4214,7 +4214,7 @@ void Spell::SendCastResult(Player* caster, SpellEntry const* spellInfo, SpellCas
             case SPELL_FAILED_EQUIPPED_ITEM_CLASS:
                 data << uint32(spellInfo->EquippedItemClass);
                 data << uint32(spellInfo->EquippedItemSubClassMask);
-                data << uint32(spellInfo->EquippedItemInventoryTypeMask);
+                data << uint32(0);
                 break;
             default:
                 break;
