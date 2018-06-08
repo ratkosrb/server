@@ -234,7 +234,8 @@ void ObjectMgr::ExportFactionDBCs()
                     myfile << "'" << ReplaceString(std::string(factionEntry->description[4])) << "', "; // 32
                     myfile << "'" << ReplaceString(std::string(factionEntry->description[5])) << "', "; // 33
                     myfile << "'" << ReplaceString(std::string(factionEntry->description[6])) << "', "; // 34
-                    myfile << "'" << ReplaceString(std::string(factionEntry->description[7])) << "');\n"; // 35
+                    myfile << "'" << ReplaceString(std::string(factionEntry->description[7])) << "', "; // 35
+                    myfile << "5464);\n";
                 }
             }
             myfile.close();
@@ -267,7 +268,8 @@ void ObjectMgr::ExportFactionDBCs()
                     myfile << factionEntry->friendFaction[0] << ", "; // 11
                     myfile << factionEntry->friendFaction[1] << ", "; // 12
                     myfile << factionEntry->friendFaction[2] << ", "; // 13
-                    myfile << factionEntry->friendFaction[3] << ");\n"; // 14
+                    myfile << factionEntry->friendFaction[3] << ", "; // 14
+                    myfile << "5464);\n";
                 }
             }
             myfile.close();
