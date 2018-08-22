@@ -1165,9 +1165,6 @@ void World::SetInitialWorldSettings()
     // Loads existing IDs in the database.
     sObjectMgr.LoadAllIdentifiers();
 
-    sLog.outString("Loading Instance Statistics...");
-    sInstanceStatistics.LoadFromDB();
-
     ///- Chargements des variables (necessaire pour le OutdoorJcJ)
     sLog.outString("Loading saved variables ...");
     sObjectMgr.LoadSavedVariable();
