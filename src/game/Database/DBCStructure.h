@@ -513,11 +513,11 @@ struct SoundEntriesEntry
 
 struct ClassFamilyMask
 {
-    uint64 Flags;
+    uint32 Flags;
 
     ClassFamilyMask() : Flags(0) {}
-    explicit ClassFamilyMask(uint64 familyFlags) : Flags(familyFlags) {}
-    ClassFamilyMask(uint32 f0, uint32 f1) : Flags(uint64(f0) | (uint64(f1) << 32)) {}
+    explicit ClassFamilyMask(uint32 familyFlags) : Flags(familyFlags) {}
+    //ClassFamilyMask(uint32 f0, uint32 f1) : Flags(uint64(f0) | (uint64(f1) << 32)) {}
 
     static ClassFamilyMask const Null;
 
@@ -525,32 +525,32 @@ struct ClassFamilyMask
     bool operator! () const { return Empty(); }
     operator void const* () const { return Empty() ? nullptr : this; }
 
-    bool IsFitToFamilyMask(uint64 familyFlags) const { return !!(Flags & familyFlags); }
+    bool IsFitToFamilyMask(uint32 familyFlags) const { return !!(Flags & familyFlags); }
     bool IsFitToFamilyMask(ClassFamilyMask const& mask) const { return !!(Flags & mask.Flags); }
 
-    uint64 operator& (uint64 mask) const
+    uint32 operator& (uint32 mask) const
     {
         return Flags & mask;
     }
 
     bool test(size_t offset) const
     {
-        return !!(Flags & (uint64(1) << offset));
+        return !!(Flags & (uint32(1) << offset));
     }
 
     template <ClassFlag... Args>
     bool test() const
     {
-        return !!(Flags & BitMask<uint64, Args...>::value);
+        return !!(Flags & BitMask<uint32, Args...>::value);
     }
 
     template <ClassFlag... Args>
     static ClassFamilyMask create()
     {
-        return ClassFamilyMask(BitMask<uint64, Args...>::value);
+        return ClassFamilyMask(BitMask<uint32, Args...>::value);
     }
     
-    bool operator== (uint64 flags) const { return Flags == flags; }
+    bool operator== (uint32 flags) const { return Flags == flags; }
     bool operator== (ClassFamilyMask const& rhs) const
     {
         return Flags == rhs.Flags;

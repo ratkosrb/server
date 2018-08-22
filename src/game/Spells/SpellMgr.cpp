@@ -4520,20 +4520,22 @@ void SpellMgr::LoadSpells()
                 myfile << spellEntry->ManaCostPercentage << ", "; // 157
                 myfile << spellEntry->StartRecoveryCategory << ", "; // 158
                 myfile << spellEntry->StartRecoveryTime << ", "; // 159
-                myfile << spellEntry->MaxTargetLevel << ", "; // 160
-                myfile << spellEntry->SpellFamilyName << ", "; // 161
-                myfile << spellEntry->SpellFamilyFlags.Flags << ", "; // 162
-                myfile << spellEntry->MaxAffectedTargets << ", "; // 163
-                myfile << spellEntry->DmgClass << ", "; // 164
-                myfile << spellEntry->PreventionType << ", "; // 165
-                myfile << spellEntry->StanceBarOrder << ", "; // 166
-                myfile << spellEntry->DmgMultiplier[0] << ", "; // 167
-                myfile << spellEntry->DmgMultiplier[1] << ", "; // 168
-                myfile << spellEntry->DmgMultiplier[2] << ", "; // 169
-                myfile << spellEntry->MinFactionId << ", "; // 170
-                myfile << spellEntry->MinReputation << ", "; // 171
-                myfile << spellEntry->RequiredAuraVision << ");\n"; // 172
-
+                myfile << "0, "; // minTargetLevel 160
+                myfile << spellEntry->MaxTargetLevel << ", "; // 161
+                myfile << spellEntry->SpellFamilyName << ", "; // 162
+                myfile << spellEntry->SpellFamilyFlags.Flags << ", "; // 163
+                myfile << spellEntry->MaxAffectedTargets << ", "; // 164
+                myfile << spellEntry->DmgClass << ", "; // 165
+                myfile << spellEntry->PreventionType << ", "; // 166
+                myfile << spellEntry->StanceBarOrder << ", "; // 167
+                myfile << spellEntry->DmgMultiplier[0] << ", "; // 168
+                myfile << spellEntry->DmgMultiplier[1] << ", "; // 169
+                myfile << spellEntry->DmgMultiplier[2] << ", "; // 170
+                myfile << spellEntry->MinFactionId << ", "; // 171
+                myfile << spellEntry->MinReputation << ", "; // 172
+                myfile << spellEntry->RequiredAuraVision << ", "; // 173
+                myfile << "0, "; // customFlags 174
+                myfile << "5302);\r\n"; // build
             }
         }
         myfile.close();
@@ -4541,7 +4543,5 @@ void SpellMgr::LoadSpells()
     sLog.outString("Finished spells extraction.");
 
     system("pause");
-
-    World::StopNow(SHUTDOWN_EXIT_CODE);
-    exit(0);
+    quick_exit(0);
 }
